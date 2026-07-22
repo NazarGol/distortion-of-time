@@ -1,0 +1,45 @@
+{
+  "name": "temporal_smear",
+  "width": 640,
+  "height": 360,
+  "fps": 12,
+  "frames": null,
+  "layers": [
+    {
+      "clip": "sample_long_a.mp4",
+      "offset": 0,
+      "scale": 1.0,
+      "opacity": 1.0
+    },
+    {
+      "clip": "sample_long_b.mp4",
+      "offset": 4,
+      "scale": 1.0,
+      "opacity": 1.0
+    }
+  ],
+  "chain": [
+    {
+      "name": "interlace",
+      "params": {
+        "strip_width": 3,
+        "orientation": "vertical",
+        "phase_speed": 2.0,
+        "feather": 2
+      }
+    },
+    {
+      "name": "feedback",
+      "params": {
+        "decay": 0.6,
+        "mode": "max"
+      }
+    },
+    {
+      "name": "temporal_average",
+      "params": {
+        "window": 3
+      }
+    }
+  ]
+}

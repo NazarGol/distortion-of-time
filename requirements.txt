@@ -1,0 +1,18 @@
+# Distortion of Time — pinned deps (Python 3.10+; tested on 3.13).
+# The compositor needs only these. No GPU and no Telegram account required.
+
+numpy==2.5.1
+opencv-python==5.0.0.93
+imageio==2.37.4
+imageio-ffmpeg==0.6.0        # bundles its own ffmpeg; no system ffmpeg needed
+python-dotenv==1.2.2
+gradio==6.20.0
+
+# Telegram scraper only (optional — the compositor never imports these):
+telethon==1.44.0
+tqdm==4.69.0
+
+# OPTIONAL GPU acceleration (not required; CPU is the default path).
+# For an RTX 50-series (Blackwell) card, install the CUDA 12.8 build separately:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu128
+# The tool auto-detects torch+CUDA at runtime and falls back to CPU otherwise.

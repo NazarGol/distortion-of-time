@@ -1,0 +1,21 @@
+# Environment / secrets
+venv/
+.env
+*.session
+*.session-journal
+
+# Generated content
+cache/*
+output/*
+__pycache__/
+*.pyc
+*.log
+
+# Keep the folders themselves (so a fresh clone has them) but not their contents:
+!cache/.gitkeep
+!output/.gitkeep
+
+# Library: commit only the shipped sample clips.
+# Anything you import or scrape yourself stays local.
+library/*
+!library/sample_*.mp4
