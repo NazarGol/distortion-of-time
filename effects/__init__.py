@@ -1,13 +1,23 @@
 """
-Optional post-processing effects, applied AFTER the core weave (see weave.py).
+Effects — siblings, not a pipeline.
 
-Import the effect modules for their @register side effects; the registry in
-effects.base then knows every available effect.
+Each *generator* takes a clip selection plus params and yields output frames from
+the pool. They are peers: superimposition and passthrough do not depend on the
+weave, and the blur suite works on any of them.
+
+    generators : weave · superimpose · passthrough ("frames")
+    post stages: feedback (hyper-imposition) · blur
+
+No registry layer, no base class — a generator is just a module with
+`generate()` and `output_len()`; a post stage is just `stage(iterable, **params)`.
 """
-from effects.base import (  # noqa: F401
-    Effect, available, build, get, register, to_u8,
-)
+from effects import blur, feedback, parallax, passthrough, superimpose, weave  # noqa: F401
 
-# Import effect modules for their @register side effects.
-from effects import feedback  # noqa: F401,E402
-from effects import blur      # noqa: F401,E402
+GENERATORS = {
+    weave.NAME: weave,                 # "weave"
+    superimpose.NAME: superimpose,     # "superimpose"
+    passthrough.NAME: passthrough,     # "frames"
+}
+
+__all__ = ["GENERATORS", "weave", "superimpose", "passthrough",
+           "feedback", "blur", "parallax"]

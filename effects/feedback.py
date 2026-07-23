@@ -1,44 +1,59 @@
 """
-Feedback trails (hyper-imposition) — optional post-processing on the woven
-output. Blends each new frame into a decaying accumulator of prior output,
-leaving echo/trails. A causal scan over time: loops over frames (T ≈ 150) but
-every step is a vectorised array op over the whole (H, W, 3) plane.
+Hyper-imposition — a stateful streaming post stage holding ONE accumulator:
+
+    acc = combine(frame, transform(acc) * persistence)
+    emit acc
+
+`transform` is the parallax half of the effect: a small zoom / rotation /
+translation applied to the accumulator on every pass, so echoes recede into a
+tunnel instead of merely fading. With transform at zero it is plain trails.
+
+Memory is one accumulator — flat regardless of render length.
 """
 from __future__ import annotations
 
+from typing import Iterable, Iterator
+
+import cv2
 import numpy as np
 
-from core import RenderContext
-from effects.base import Effect, register, to_u8
+MODES = ("mean", "max", "add")
 
 
-@register
-class FeedbackEffect(Effect):
-    name = "feedback"
-    label = "Feedback trails"
-    PARAMS = [
-        {"name": "decay", "label": "Persistence", "type": "float",
-         "min": 0.0, "max": 0.98, "step": 0.02, "default": 0.8},
-        {"name": "mode", "label": "Trail mode", "type": "choice",
-         "choices": ["max", "mean", "add"], "default": "max"},
-    ]
+def stage(src: Iterable[np.ndarray], *, persistence: float = 0.0,
+          mode: str = "mean", zoom: float = 0.0, rotate: float = 0.0,
+          tx: float = 0.0, ty: float = 0.0) -> Iterator[np.ndarray]:
+    p = float(persistence)
+    if p <= 0.0:
+        yield from src
+        return
 
-    def apply(self, layers: list[np.ndarray], ctx: RenderContext) -> list[np.ndarray]:
-        decay = float(self.params["decay"])
-        mode = self.params["mode"]
+    acc = None
+    m = None
+    for frame in src:
+        f = frame.astype(np.float32)
+        if acc is None:
+            acc = f
+            yield np.clip(acc, 0, 255).astype(np.uint8)
+            continue
 
-        out_layers = []
-        for layer in layers:
-            f = layer.astype(np.float32)
-            acc = np.empty_like(f)
-            acc[0] = f[0]
-            for t in range(1, f.shape[0]):
-                prev = acc[t - 1] * decay
-                if mode == "max":
-                    acc[t] = np.maximum(f[t], prev)
-                elif mode == "add":
-                    acc[t] = np.minimum(f[t] + prev, 255.0)
-                else:  # mean / exponential moving average
-                    acc[t] = f[t] * (1.0 - decay) + acc[t - 1] * decay
-            out_layers.append(to_u8(acc))
-        return out_layers
+        prev = acc
+        if zoom or rotate or tx or ty:
+            if m is None:
+                h, w = frame.shape[:2]
+                m = cv2.getRotationMatrix2D((w / 2.0, h / 2.0), float(rotate),
+                                            1.0 + float(zoom))
+                m[0, 2] += float(tx)
+                m[1, 2] += float(ty)
+            prev = cv2.warpAffine(prev, m, (frame.shape[1], frame.shape[0]),
+                                  flags=cv2.INTER_LINEAR,
+                                  borderMode=cv2.BORDER_REFLECT)
+        prev = prev * p
+
+        if mode == "max":
+            acc = np.maximum(f, prev)
+        elif mode == "add":
+            acc = np.minimum(f + prev, 255.0)
+        else:                                     # mean / exponential moving average
+            acc = f * (1.0 - p) + prev
+        yield np.clip(acc, 0, 255).astype(np.uint8)

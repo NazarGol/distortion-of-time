@@ -1,0 +1,11 @@
+# OPTIONAL — enables `parallax = depth` (monocular depth parallax).
+# The base install does NOT need these; without them the depth option is simply
+# disabled in the UI and everything else works.
+#
+#   pip install -r requirements-depth.txt
+#
+# For an RTX 50-series (Blackwell) card, install the CUDA build of torch first:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu128
+torch
+transformers>=4.45
+pillow
