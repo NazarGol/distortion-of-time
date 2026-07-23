@@ -23,22 +23,40 @@ import numpy as np
 
 import config
 import effects
+import sequencer
 from pool import FrameCache
 from render.writer import stream_writer
 
 
-def build_stream(selection, cache, params, *, num_frames=None):
-    """Compose generator + post stages into a single frame iterator.
-    Returns (iterator, description-parts)."""
+def build_sequence_for(selection, params, *, num_frames=None):
+    """The traversal every generator walks (see sequencer.py)."""
+    fps = float(params.get("fps", config.FPS_FALLBACK))
+    return sequencer.build_sequence(
+        selection,
+        length=output_len(selection, params, num_frames),
+        order=params.get("order", "linear"),
+        step_rate=params.get("step_rate") or None,
+        output_fps=fps,
+        jump_prob=float(params.get("jump_prob", 0.0) or 0.0),
+        jump_range=int(params.get("jump_range", 0) or 0),
+        seed=int(params.get("seed", 0) or 0),
+    )
+
+
+def build_stream(selection, cache, params, *, num_frames=None, sequence=None):
+    """Compose generator + post stages into a single frame iterator."""
     mode = params.get("mode", "weave")
     gen = effects.GENERATORS.get(mode, effects.GENERATORS["weave"])
     fps = float(params.get("fps", config.FPS_FALLBACK))
+    if sequence is None:
+        sequence = build_sequence_for(selection, params, num_frames=num_frames)
 
-    src = gen.generate(selection, cache, num_frames=num_frames, fps=fps, **{
+    src = gen.generate(selection, cache, num_frames=num_frames, fps=fps,
+                       sequence=sequence, **{
         k: v for k, v in params.items()
         if k in ("strip_width", "frame_step", "orientation", "source_mode",
-                 "layers", "spread", "blend", "parallax", "amount",
-                 "px_zoom", "px_pan", "px_rotate")
+                 "layers", "stride", "centred", "blend", "parallax", "amount",
+                 "px_zoom", "px_pan", "px_rotate", "flow_source")
     })
 
     # ── optional guide clip (cross-video structure/luminance control) ──────────
@@ -63,7 +81,8 @@ def build_stream(selection, cache, params, *, num_frames=None):
     blur_amount = float(params.get("blur_amount", 0.0) or 0.0)
     if blur_kind and blur_amount > 0:
         src = effects.blur.stage(src, kind=blur_kind, amount=blur_amount,
-                                 guide=guide, levels=int(params.get("blur_levels", 5)))
+                                 guide=guide, levels=int(params.get("blur_levels", 5)),
+                                 angle=float(params.get("blur_angle", 90.0)))
     return src
 
 
@@ -86,7 +105,9 @@ def render(selection, out_path, params, *, num_frames=None,
     fps = float(params.get("fps", config.FPS_FALLBACK))
     T_expected = output_len(selection, params, num_frames)
 
-    stream = build_stream(selection, cache, params, num_frames=num_frames)
+    seq = build_sequence_for(selection, params, num_frames=num_frames)
+    stream = build_stream(selection, cache, params, num_frames=num_frames,
+                          sequence=seq)
     t0 = time.time()
     writer = stream_writer(out_path, fps)
     written = 0
@@ -105,4 +126,8 @@ def render(selection, out_path, params, *, num_frames=None,
         "height": config.WORKING_HEIGHT, "sources": len(selection),
         "cache_hits": cache.hits, "cache_misses": cache.misses,
         "wall_s": time.time() - t0, "fps": fps,
+        # the traversal travels with the render so it can be reproduced exactly
+        "seed": seq.seed, "order": seq.order, "step_rate": seq.step_rate,
+        "hold": seq.hold, "jump_prob": seq.jump_prob, "steps": len(seq.steps),
+        "sequence": seq.describe(),
     }

@@ -49,6 +49,7 @@
 
   .controls{display:grid; gap:24px; padding:10px 20px 4px; align-items:start}
   .controls.hidden{display:none}
+  #rowSeq{grid-template-columns:1fr 1.2fr 1.2fr 1fr}
   #rowWeave{grid-template-columns:1.1fr 1.5fr 1fr}
   #rowSuper{grid-template-columns:1fr 1fr 1.2fr 1fr}
   #rowPost{grid-template-columns:1.5fr 1.2fr 1fr; border-top:1px solid var(--line); padding-top:12px; margin-top:6px}
@@ -143,6 +144,39 @@
     <button data-m="frames">Frames</button>
   </div>
 
+  <!-- sequence: governs every mode -->
+  <div class="controls" id="rowSeq">
+    <div class="ctl">
+      <span class="lbl">Order</span>
+      <select id="order"></select>
+    </div>
+    <div class="ctl">
+      <span class="lbl">Step rate</span>
+      <div class="row2">
+        <input type="range" id="steprate" min="1" max="60" step="1" value="24" style="flex:1">
+        <span class="val"><b id="steprv">24</b>/s</span>
+      </div>
+      <span class="val" style="font-size:10px;color:var(--dim)">hold <b id="holdv">1</b> frames</span>
+    </div>
+    <div class="ctl">
+      <span class="lbl">Jump</span>
+      <div class="row2">
+        <input type="range" id="jumpprob" min="0" max="1" step="0.01" value="0" style="flex:1">
+        <span class="val"><b id="jumpprobv">0.00</b></span>
+      </div>
+      <div class="mini"><span class="lbl">range (steps)</span>
+        <input type="number" class="num" id="jumprange" value="60" min="0" max="5000" step="10"></div>
+    </div>
+    <div class="ctl">
+      <span class="lbl">Seed</span>
+      <div class="row2">
+        <input type="number" class="num" id="seed" value="4471" min="0" max="999999" style="width:88px">
+        <button class="lbl" id="reseed" style="border:1px solid var(--line);padding:4px 8px">new</button>
+      </div>
+      <span class="hint">in filename + metadata</span>
+    </div>
+  </div>
+
   <!-- mode-dependent first row -->
   <div class="controls" id="rowWeave">
     <div class="ctl">
@@ -177,9 +211,10 @@
       <span class="val"><b id="layersv">1</b></span>
     </div>
     <div class="ctl">
-      <span class="lbl">Spread</span>
-      <input type="range" id="spread" min="0" max="2" step="0.02" value="0">
-      <span class="val"><b id="spreadv">0.00</b>s between layers</span>
+      <span class="lbl">Stride</span>
+      <input type="range" id="stride" min="0" max="24" step="0.5" value="1">
+      <span class="val"><b id="stridev">1</b> steps between layers</span>
+      <label class="lbl"><input type="checkbox" id="centred"> centred stack</label>
     </div>
     <div class="ctl">
       <span class="lbl">Parallax</span>
@@ -187,6 +222,10 @@
       <div class="row2">
         <input type="range" id="pxamt" min="0" max="1" step="0.05" value="0" style="flex:1">
         <span class="val"><b id="pxamtv">0.00</b></span>
+      </div>
+      <div class="row2" id="pxflow" style="display:none">
+        <span class="lbl">flow vs</span>
+        <select id="flowsource" style="width:auto"></select>
       </div>
       <div class="row2" id="pxaffine" style="display:none">
         <label class="lbl"><input type="checkbox" id="pxzoom" checked> zoom</label>
@@ -222,6 +261,11 @@
       <div class="row2">
         <input type="range" id="bluramt" min="0" max="1" step="0.05" value="0" style="flex:1">
         <span class="val"><b id="bluramtv">0.00</b></span>
+      </div>
+      <div class="row2" id="smearangle" style="display:none">
+        <span class="lbl">angle</span>
+        <input type="range" id="blurangle" min="0" max="180" step="5" value="90" style="flex:1">
+        <span class="val"><b id="bluranglev">90</b>°</span>
       </div>
     </div>
     <div class="ctl">
@@ -300,6 +344,8 @@ async function loadStats(){
   const s=await (await fetch('/api/stats')).json();
   state.fps=s.fps||24; state.width=s.width||640; state.caps=s;
   state._counts={clips:s.clips,frames:s.frames};
+  const sr=$('#steprate'); sr.max=Math.max(60,Math.round(state.fps*2));
+  if(!state._srTouched){ sr.value=state.fps; $('#steprv').textContent=(+sr.value).toFixed(0); }
   const tg=s.telegram||{ok:false,msg:''};
   ['chan','cnt','scrapeBtn'].forEach(id=>$('#'+id).disabled=!tg.ok);
   if(tg.msg) $('#tgHint').textContent = tg.ok?'ready':tg.msg.replace(/[🔒⚠️]/g,'').trim();
@@ -314,6 +360,10 @@ function fillSelects(s){
   });
   const bl=$('#blend'); bl.innerHTML='';
   (s.blends||['mean']).forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;bl.appendChild(o);});
+  const od=$('#order'); od.innerHTML='';
+  (s.orders||['linear']).forEach(o=>{const e=document.createElement('option');e.value=o;e.textContent=o;od.appendChild(e);});
+  const fs=$('#flowsource'); fs.innerHTML='';
+  (s.flow_sources||['source']).forEach(o=>{const e=document.createElement('option');e.value=o;e.textContent=o;fs.appendChild(e);});
   const tm=$('#trailmode'); tm.innerHTML='';
   (s.trail_modes||['mean']).forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;tm.appendChild(o);});
   refreshBlurSelect();
@@ -408,19 +458,45 @@ $('#fps_ps').oninput=e=>setSpan(spanForFps(Math.max(.05,Math.min(4,+e.target.val
   state[g]=b.dataset.v; if(g==='axis'){syncRange(); setSpan(+$('#span').value,'axis');} updateDerived();
 }));
 
+// sequence controls
+function updateHold(){
+  const sr=Math.max(0.05,+$('#steprate').value);
+  $('#holdv').textContent=(state.fps/sr).toFixed(2).replace(/\.00$/,'');
+}
+$('#order').onchange=updateDerived;
+$('#steprate').oninput=e=>{ state._srTouched=true; $('#steprv').textContent=(+e.target.value).toFixed(0); updateHold(); updateDerived(); };
+$('#jumpprob').oninput=e=>{$('#jumpprobv').textContent=(+e.target.value).toFixed(2); updateDerived();};
+$('#jumprange').onchange=updateDerived;
+$('#seed').onchange=updateDerived;
+$('#reseed').onclick=()=>{ $('#seed').value=Math.floor(Math.random()*100000); updateDerived(); };
+
 // superimpose + post live readouts
 $('#layers').oninput=e=>{$('#layersv').textContent=e.target.value; updateDerived();};
-$('#spread').oninput=e=>{$('#spreadv').textContent=(+e.target.value).toFixed(2); updateDerived();};
+$('#stride').oninput=e=>{$('#stridev').textContent=(+e.target.value); updateDerived();};
+$('#centred').onchange=updateDerived;
+$('#flowsource').onchange=updateDerived;
 $('#pxamt').oninput=e=>{$('#pxamtv').textContent=(+e.target.value).toFixed(2); updateDerived();};
-$('#parallax').onchange=()=>{ $('#pxaffine').style.display = $('#parallax').value==='affine'?'flex':'none'; updateDerived(); };
+$('#parallax').onchange=()=>{ const v=$('#parallax').value;
+  $('#pxaffine').style.display = v==='affine'?'flex':'none';
+  $('#pxflow').style.display   = v==='flow'?'flex':'none'; updateDerived(); };
 $('#blend').onchange=updateDerived;
 $('#persist').oninput=e=>{$('#persistv').textContent=(+e.target.value).toFixed(2); updateDerived();};
 $('#bluramt').oninput=e=>{$('#bluramtv').textContent=(+e.target.value).toFixed(2); updateDerived();};
-['trailmode','blurkind','tzoom','trot'].forEach(id=>$('#'+id).onchange=updateDerived);
+$('#blurangle').oninput=e=>{$('#bluranglev').textContent=e.target.value; updateDerived();};
+['trailmode','tzoom','trot'].forEach(id=>$('#'+id).onchange=updateDerived);
+$('#blurkind').onchange=()=>{ $('#smearangle').style.display = $('#blurkind').value==='smear'?'flex':'none'; updateDerived(); };
 
 // ── derived readout: the active chain, in plain words ────────────────────
 function updateDerived(){
   const parts=[];
+  // the traversal governs every mode, so it leads the readout
+  const ord=$('#order').value, sr=Math.max(0.05,+$('#steprate').value), hold=state.fps/sr;
+  let sq=`<b>${ord}</b> order · <b>${sr.toFixed(0)}</b> stills/sec`;
+  if(Math.abs(hold-1)>1e-6) sq+=` (hold <b>${hold.toFixed(2).replace(/\.00$/,'')}</b> frames)`;
+  const jp=+$('#jumpprob').value;
+  if(jp>0) sq+=` · jump <b>${jp.toFixed(2)}</b>`;
+  sq+=` · seed <b>${$('#seed').value}</b>`;
+  parts.push(sq);
   if(state.mode==='weave'){
     const span=+$('#span').value, ns=nStrips(), fp=fpsPerStrip(span);
     let p=`<b>${ns}</b> strips · <b>${fp.toFixed(2)}</b> frames per strip · frame holds <b>${fmtSpan(span)}</b>`;
@@ -428,10 +504,11 @@ function updateDerived(){
     parts.push(p);
     parts.push(state.selected.size===1?'slit-scan (1 clip)':`${state.selected.size}-clip rotation`);
   }else if(state.mode==='superimpose'){
-    const L=+$('#layers').value, sp=+$('#spread').value;
-    parts.push(`<b>${L}</b> layers`+(sp>0?` spaced <b>${sp.toFixed(2)}s</b>`:' at the same instant'));
+    const L=+$('#layers').value, st=+$('#stride').value;
+    parts.push(`<b>${L}</b> layers stride <b>${st}</b>`+($('#centred').checked?' (centred)':''));
     const pm=$('#parallax').value, pa=+$('#pxamt').value;
-    if(pm!=='none'&&pa>0) parts.push(`<b>${pm}</b> parallax <b>${pa.toFixed(2)}</b>`);
+    if(pm!=='none'&&pa>0) parts.push(`<b>${pm}</b> parallax <b>${pa.toFixed(2)}</b>`+
+      (pm==='flow'?` vs ${$('#flowsource').value}`:''));
     parts.push(`<b>${$('#blend').value}</b> blend`);
     if(state.selected.size>1) parts.push(`across <b>${state.selected.size}</b> clips`);
   }else{
@@ -443,7 +520,8 @@ function updateDerived(){
     if(z||r) t+=` ${z?`zoom ${(1+z).toFixed(3)}`:''}${z&&r?' ':''}${r?`rot ${r}°`:''}`;
     parts.push(t); }
   const bk=$('#blurkind').value, ba=+$('#bluramt').value;
-  if(bk&&ba>0) parts.push(`<b>${bk.replace(/_/g,' ')}</b> blur <b>${ba.toFixed(2)}</b>`);
+  if(bk&&ba>0) parts.push(`<b>${bk.replace(/_/g,' ')}</b> blur <b>${ba.toFixed(2)}</b>`+
+    (bk==='smear'?` @ ${$('#blurangle').value}°`:''));
   if(state.guide) parts.push(`<span style="color:var(--guide)">guide: ${nameOf(state.guide)}</span>`);
   if(!state.selected.size) parts.push('<span class="flag">— no clips selected</span>');
   $('#derived').innerHTML=parts.join(' &nbsp;·&nbsp; ');
@@ -459,13 +537,18 @@ $('#renderBtn').onclick=async()=>{
   if(state.guide) fd.append('guide_id',state.guide);
   fd.append('strip_width',$('#sw').value); fd.append('span_seconds',$('#span').value);
   fd.append('direction',state.dir); fd.append('orientation',state.axis);
-  fd.append('layers',$('#layers').value); fd.append('spread',$('#spread').value);
+  fd.append('order',$('#order').value); fd.append('step_rate',$('#steprate').value);
+  fd.append('jump_prob',$('#jumpprob').value); fd.append('jump_range',$('#jumprange').value);
+  fd.append('seed',$('#seed').value);
+  fd.append('layers',$('#layers').value); fd.append('stride',$('#stride').value);
+  fd.append('centred',$('#centred').checked); fd.append('flow_source',$('#flowsource').value);
   fd.append('blend',$('#blend').value); fd.append('parallax',$('#parallax').value);
   fd.append('amount',$('#pxamt').value);
   fd.append('px_zoom',$('#pxzoom').checked); fd.append('px_pan',$('#pxpan').checked); fd.append('px_rotate',$('#pxrot').checked);
   fd.append('persistence',$('#persist').value); fd.append('trail_mode',$('#trailmode').value);
   fd.append('trail_zoom',$('#tzoom').value); fd.append('trail_rotate',$('#trot').value);
   fd.append('blur_kind',$('#blurkind').value); fd.append('blur_amount',$('#bluramt').value);
+  fd.append('blur_angle',$('#blurangle').value);
   try{
     const r=await (await fetch('/api/render',{method:'POST',body:fd})).json();
     if(r.error){ $('#ph').textContent=r.error; $('#ph').style.display='block'; }
@@ -498,7 +581,7 @@ $('#wipeBtn').onclick=()=>{ if(!confirm('Wipe ALL decomposed frames from the poo
   post('/api/wipe',new FormData(),'wiping pool…'); };
 
 (async()=>{ await loadStats(); await loadCorpus(true);
-  syncRange(); setSpan(spanForFps(1),'init'); updateDerived(); })();
+  syncRange(); setSpan(spanForFps(1),'init'); updateHold(); updateDerived(); })();
 </script>
 </body>
 </html>

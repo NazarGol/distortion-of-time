@@ -5,6 +5,7 @@ plain frames (no weave, no superimposition involved).
 Each stage takes one `amount` in 0–1 driving its primary parameter, streams with
 bounded buffers, and is vectorised (no per-pixel Python loops).
 
+    smear              fixed-angle directional motion blur       (angle + amount → 1–48px)
     temporal_average   ring buffer mean — long exposure          (amount → window 1–24)
     motion_flow        Farneback flow, blur along the vectors    (amount → taps/strength)
     gaussian           baseline                                   (amount → sigma)
@@ -27,12 +28,40 @@ from typing import Callable, Iterable, Iterator
 import cv2
 import numpy as np
 
-KINDS = ("temporal_average", "motion_flow", "gaussian", "fft_lowpass",
+KINDS = ("smear", "temporal_average", "motion_flow", "gaussian", "fft_lowpass",
          "edge_bilateral", "anisotropic", "luminance_guided")
 GUIDE_ONLY = ("luminance_guided",)
 
 
 # ── individual operators ─────────────────────────────────────────────────────────
+def _smear_kernel(angle_deg: float, length: int) -> np.ndarray:
+    """Normalised line kernel at `angle_deg` (0 = horizontal, 90 = vertical)."""
+    L = max(1, int(length))
+    if L == 1:
+        return np.ones((1, 1), np.float32)
+    k = np.zeros((L, L), np.float32)
+    c = (L - 1) / 2.0
+    th = np.deg2rad(angle_deg)
+    dx, dy = np.cos(th), -np.sin(th)
+    ts = np.linspace(-c, c, L * 2)
+    xs = np.clip(np.round(c + dx * ts).astype(int), 0, L - 1)
+    ys = np.clip(np.round(c + dy * ts).astype(int), 0, L - 1)
+    k[ys, xs] = 1.0
+    total = k.sum()
+    return k / total if total else k
+
+
+def _smear(img, amount, angle):
+    """Directional smear — the reference footage's blur is strongly anisotropic
+    (measured ~7.4:1 horizontal:vertical gradient energy), which a gaussian
+    cannot produce. One separable-ish line-kernel convolution, vectorised."""
+    length = int(round(1 + amount * 47))
+    if length <= 1:
+        return img
+    k = _smear_kernel(angle, length)
+    return cv2.filter2D(img, -1, k, borderType=cv2.BORDER_REFLECT)
+
+
 def _gaussian(img, amount):
     sigma = amount * 20.0
     if sigma <= 0.01:
@@ -108,7 +137,7 @@ def _luminance_guided(img, amount, guide, levels=5):
 # ── streaming stage ──────────────────────────────────────────────────────────────
 def stage(src: Iterable[np.ndarray], *, kind: str = "", amount: float = 0.0,
           guide: Callable[[int], np.ndarray | None] | None = None,
-          levels: int = 5) -> Iterator[np.ndarray]:
+          levels: int = 5, angle: float = 90.0) -> Iterator[np.ndarray]:
     amount = float(amount)
     if not kind or kind not in KINDS or amount <= 0.0:
         yield from src
@@ -163,7 +192,9 @@ def stage(src: Iterable[np.ndarray], *, kind: str = "", amount: float = 0.0,
     # per-frame (optionally guide-driven) operators
     for t, frame in enumerate(src):
         g = guide(t) if guide is not None else None
-        if kind == "gaussian":
+        if kind == "smear":
+            yield _smear(frame, amount, angle)
+        elif kind == "gaussian":
             yield _gaussian(frame, amount)
         elif kind == "fft_lowpass":
             yield _fft_lowpass(frame, amount)

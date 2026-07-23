@@ -70,6 +70,8 @@ def api_stats():
               "blends": list(supmod.BLENDS),
               "parallax_modes": list(pxmod.MODES),
               "trail_modes": list(fbmod.MODES),
+              "orders": list(__import__("sequencer").ORDERS),
+              "flow_sources": list(supmod.FLOW_SOURCES),
               "blur_kinds": list(blurmod.KINDS),
               "blur_guide_only": list(blurmod.GUIDE_ONLY),
               "depth": {"ok": bool(d_ok), "msg": d_why}})
@@ -159,9 +161,17 @@ def api_render(
     span_seconds: float = Form(1.5),
     direction: str = Form("forward"),        # forward | back
     orientation: str = Form("vertical"),     # vertical | horizontal
+    # sequence (upstream of every effect)
+    order: str = Form("linear"),
+    step_rate: float = Form(0.0),            # 0 → default = output fps (neutral)
+    jump_prob: float = Form(0.0),
+    jump_range: int = Form(0),
+    seed: int = Form(0),
     # superimpose
     layers: int = Form(1),
-    spread: float = Form(0.0),
+    stride: float = Form(1.0),
+    centred: bool = Form(False),
+    flow_source: str = Form("source"),
     blend: str = Form("mean"),
     parallax: str = Form("none"),
     amount: float = Form(0.0),
@@ -176,6 +186,7 @@ def api_render(
     # post: blur
     blur_kind: str = Form(""),
     blur_amount: float = Form(0.0),
+    blur_angle: float = Form(90.0),
     preview: bool = Form(False),
 ):
     pooled = {v["video_id"]: v for v in pool.list_videos()}
@@ -192,9 +203,13 @@ def api_render(
 
     params = {"mode": mode if mode in ("weave", "superimpose", "frames") else "weave",
               "fps": fps,
+              # sequence — governs every mode
+              "order": order, "step_rate": step_rate or fps,
+              "jump_prob": jump_prob, "jump_range": jump_range, "seed": seed,
               "persistence": persistence, "trail_mode": trail_mode,
               "trail_zoom": trail_zoom, "trail_rotate": trail_rotate,
-              "blur_kind": blur_kind, "blur_amount": blur_amount}
+              "blur_kind": blur_kind, "blur_amount": blur_amount,
+              "blur_angle": blur_angle}
 
     if guide_id and guide_id in pooled:
         params["guide_id"] = guide_id
@@ -212,13 +227,15 @@ def api_render(
                        "frame_step": -step if direction == "back" else step,
                        "orientation": orientation})
     elif params["mode"] == "superimpose":
-        params.update({"layers": int(layers), "spread": float(spread),
+        params.update({"layers": int(layers), "stride": float(stride),
+                       "centred": bool(centred), "flow_source": flow_source,
                        "blend": blend, "parallax": parallax, "amount": float(amount),
                        "px_zoom": px_zoom, "px_pan": px_pan, "px_rotate": px_rotate})
 
     num_frames = config.PREVIEW_MAX_FRAMES if preview else None
-    out_path = os.path.join(config.OUTPUT_DIR,
-                            f"{'preview' if preview else 'render'}_{int(time.time())}.mp4")
+    out_path = os.path.join(
+        config.OUTPUT_DIR,
+        f"{'preview' if preview else 'render'}_{int(time.time())}_seed{int(seed)}.mp4")
     m = pipeline.render(videos, out_path, params, num_frames=num_frames)
     m["mode"] = params["mode"]
     if params["mode"] == "weave":

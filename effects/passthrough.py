@@ -1,9 +1,9 @@
 """
-Passthrough generator — plain frames straight out of the pool, no structural
-effect. Exists so the blur suite and trails can be used on unmodified footage
-(no weave, no superimposition involved).
+Passthrough generator — the stills the sequencer selected, unmodified.
 
-Walks the selection in order, playing each selected clip end to end.
+No structural effect: it simply walks the sequence, so the blur suite and trails
+can be used on plain footage, and so the sequencer's rate/order/jumps can be
+auditioned on their own (this is the clearest way to see a traversal).
 """
 from __future__ import annotations
 
@@ -20,17 +20,16 @@ def output_len(selection: list[dict], num_frames: int | None = None) -> int:
     return max(1, sum(max(1, int(v["n_frames"])) for v in selection))
 
 
-def generate(selection: list[dict], cache, *,
-             num_frames: int | None = None, **_ignored) -> Iterator[np.ndarray]:
+def generate(selection: list[dict], cache, *, num_frames: int | None = None,
+             sequence=None, **_ignored) -> Iterator[np.ndarray]:
     if not selection:
         raise ValueError("passthrough needs at least one clip")
-    T = output_len(selection, num_frames)
-    emitted = 0
-    while emitted < T:
-        for v in selection:
-            L = max(1, int(v["n_frames"]))
-            for i in range(L):
-                if emitted >= T:
-                    return
-                yield cache.get(v["video_id"], i)
-                emitted += 1
+    if sequence is None:
+        T = output_len(selection, num_frames)
+        for t in range(T):
+            v = selection[0]
+            yield cache.get(v["video_id"], t % max(1, int(v["n_frames"])))
+        return
+    for t in range(sequence.length):
+        ref = sequence.at(t)
+        yield cache.get(ref.video_id, ref.frame_no)
