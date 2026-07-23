@@ -39,16 +39,11 @@ def device_label() -> str:
 
 @dataclass
 class RenderContext:
-    """Passed down the effect chain so effects can adapt to preview vs. full
-    render and to the available compute device.
-
-    `layer_opacities` is aligned with the *source* layer list the compositor
-    built; combiner effects (e.g. superimpose) read it for per-layer opacity.
-    """
+    """Passed to post-processing effects so they can adapt to preview vs. full
+    render and to the available compute device."""
 
     fps: int
     width: int
     height: int
     is_preview: bool = False
     device: str = "cpu"
-    layer_opacities: list[float] | None = None

@@ -1,18 +1,16 @@
 """
-Effect framework.
+Effect framework — optional post-processing on the woven output.
 
-An Effect transforms a *list of layers*. Each layer is an (T, H, W, 3) uint8 RGB
-array; all layers in the list share the same T, H, W (the compositor guarantees
-this). Working in whole sequences (not per-pixel, not per-frame-in-Python) keeps
-everything vectorised — the hard rule for this project.
+The core operation of this tool is the time-displacement weave (weave.py); the
+effects here (feedback trails, the blur suite) are filters applied AFTER it.
+An Effect transforms a *list* of (T, H, W, 3) uint8 RGB frame stacks — in
+practice a single-element list holding the weave result. Working in whole
+sequences (not per-pixel, not per-frame-in-Python) keeps everything vectorised —
+the hard rule for this project.
 
-Two broad kinds of effect:
-  • combiners  (interlace, superimpose)  reduce many layers -> one layer.
-  • filters    (blur, feedback)          transform layer(s) in place.
-
-Effects declare a PARAMS schema so the Gradio UI can build sliders generically —
-that's the extension point: add an Effect subclass + register it, and it shows up
-in the UI with no UI code changes.
+Effects declare a PARAMS schema (name/label/type/range/default per param), so
+new effects are self-describing: subclass Effect, decorate with @register,
+import the module in effects/__init__.py.
 """
 from __future__ import annotations
 
@@ -26,8 +24,8 @@ from core import RenderContext
 class Effect:
     name: str = "base"
     label: str = "Base"
-    reduces: bool = False          # True -> collapses N layers into 1
-    PARAMS: list[dict[str, Any]] = []   # UI/param schema (see interlace.py for example)
+    reduces: bool = False          # legacy flag, kept for subclass compat
+    PARAMS: list[dict[str, Any]] = []   # UI/param schema (see blur.py for examples)
 
     def __init__(self, **params: Any):
         merged = {p["name"]: p.get("default") for p in self.PARAMS}
@@ -65,10 +63,5 @@ def build(name: str, params: dict[str, Any] | None = None) -> Effect:
 
 
 # ── Small shared numeric helpers ─────────────────────────────────────────────────
-def stack_layers(layers: list[np.ndarray]) -> np.ndarray:
-    """(L,) list of (T,H,W,3) -> (L, T, H, W, 3) float32."""
-    return np.stack([l.astype(np.float32) for l in layers], axis=0)
-
-
 def to_u8(arr: np.ndarray) -> np.ndarray:
     return np.clip(arr, 0, 255).astype(np.uint8)

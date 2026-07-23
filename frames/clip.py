@@ -60,7 +60,8 @@ def _cache_key(path: str, fps: int, size: tuple[int, int]) -> str:
         mtime = os.path.getmtime(path)
     except OSError:
         mtime = 0
-    raw = f"{os.path.abspath(path)}|{mtime}|{fps}|{size[0]}x{size[1]}"
+    raw = (f"{os.path.abspath(path)}|{mtime}|{fps}|{size[0]}x{size[1]}"
+           f"|cap{config.MAX_CLIP_SECONDS}")
     return hashlib.md5(raw.encode()).hexdigest()
 
 
@@ -127,9 +128,11 @@ def extract(
     src_fps = cap.get(cv2.CAP_PROP_FPS) or fps
     n_src = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
 
-    # Read every source frame once (sequential decode is fastest), resize on the way.
+    # Read source frames once (sequential decode is fastest), resize on the way.
+    # Cap at MAX_CLIP_SECONDS so a long scraped video can't eat gigabytes of RAM.
+    max_src_frames = int((src_fps or fps) * config.MAX_CLIP_SECONDS)
     src_frames: list[np.ndarray] = []
-    while True:
+    while len(src_frames) < max_src_frames:
         ok, frame = cap.read()
         if not ok:
             break

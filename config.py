@@ -11,12 +11,11 @@ import os
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-LIBRARY_DIR      = os.path.join(ROOT, "library")       # clips live here
-CACHE_DIR        = os.path.join(ROOT, "cache")         # decoded-frame + thumb cache
-OUTPUT_DIR       = os.path.join(ROOT, "output")        # rendered mp4s
-COMPOSITIONS_DIR = os.path.join(ROOT, "compositions")  # saved composition presets (JSON)
+LIBRARY_DIR = os.path.join(ROOT, "library")   # clips live here
+CACHE_DIR   = os.path.join(ROOT, "cache")     # decoded-frame + thumb cache
+OUTPUT_DIR  = os.path.join(ROOT, "output")    # rendered mp4s
 
-for _d in (LIBRARY_DIR, CACHE_DIR, OUTPUT_DIR, COMPOSITIONS_DIR):
+for _d in (LIBRARY_DIR, CACHE_DIR, OUTPUT_DIR):
     os.makedirs(_d, exist_ok=True)
 
 VIDEO_EXTS = (".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v")
@@ -32,3 +31,7 @@ DEFAULT_FPS    = 12
 # Preview runs on a short, downscaled segment so the UI stays responsive.
 PREVIEW_MAX_FRAMES = 36
 PREVIEW_MAX_WIDTH  = 384
+
+# Long sources (full scraped posts, etc.) are truncated at decode time so a
+# single clip can't eat gigabytes of RAM. Raise if you genuinely need more.
+MAX_CLIP_SECONDS = 90

@@ -1,17 +1,13 @@
-"""Effects package. Importing it registers every built-in effect.
+"""
+Optional post-processing effects, applied AFTER the core weave (see weave.py).
 
-Extension point: add a module here, decorate your Effect subclass with
-@register, import it below, and it appears in the UI automatically.
+Import the effect modules for their @register side effects; the registry in
+effects.base then knows every available effect.
 """
 from effects.base import (  # noqa: F401
-    Effect,
-    available,
-    build,
-    get,
-    register,
+    Effect, available, build, get, register, to_u8,
 )
 
 # Import effect modules for their @register side effects.
-from effects import interlace     # noqa: F401,E402
-from effects import superimpose   # noqa: F401,E402
-from effects import blur          # noqa: F401,E402
+from effects import feedback  # noqa: F401,E402
+from effects import blur      # noqa: F401,E402

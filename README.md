@@ -1,13 +1,53 @@
 # Distortion of Time
 
 A local tool for a programmatic video artwork about information / cognitive
-warfare and the **distortion of time**. Degraded footage is broken into frames
-and re-woven — sliced into interlaced strips, time-shifted, and superimposed — so
-a single output frame holds **several moments at once**.
+warfare and the **distortion of time**. Degraded footage is re-woven as a
+**vertical-strip time-displacement weave** — a slit-scan across multiple videos —
+so a single output frame holds **many consecutive moments at once**.
 
 > You do **not** need a Telegram account, a GPU, or any credentials to use this.
-> The compositor works on a plain folder of local video clips. The Telegram
-> scraper is one *optional* way to fill that folder — never a dependency.
+> The weave works on a plain folder of local video clips. The Telegram scraper is
+> one *optional* way to fill that folder — never a dependency.
+
+---
+
+## The core effect — the weave mechanism
+
+Given N source videos, all decoded to frame sequences and normalised to a common
+resolution + fps:
+
+- The output frame is divided into thin **vertical strips** (columns). Strip
+  width in px is a parameter; small (1–3 px) gives the fine lenticular shimmer,
+  wider gives coarser bands.
+- Walking the strips **left → right** across one output frame, each successive
+  strip **advances one step in time** and **rotates to the next source video**.
+  For strip index `i` in output frame `t`:
+
+  ```
+  out[t] columns of strip i  =  the same columns taken from
+      video[i mod N]  at  frame (t + i * frame_step)
+  ```
+
+  (`frame_step` default 1.) Column band `i` shows video `i mod N` at a later
+  moment than band `i-1`: a single output image contains many consecutive
+  moments woven across the N videos — **time runs across the width of the
+  frame**. This is a *displacement* of image data in time, not a blend, mean,
+  or overlay.
+- For the next output frame (`t+1`) the base index advances by one, so the whole
+  weave scrolls / flows as the video plays.
+- Clips shorter than needed **loop** (sampling is modulo each clip's length).
+
+Parameters: `strip_width` (px) · `frame_step` (frames per strip, may be
+negative) · `orientation` (vertical / horizontal) · `source_mode`
+(`rotate` = strip i ← video i mod N, default · `single` = pure slit-scan of one
+clip). N is simply however many clips are loaded in the source pool.
+
+Implementation: `weave.py`. Fully vectorised — for each source video, all of its
+strips across all output frames are gathered in a single numpy fancy-index; no
+per-pixel loops, no per-frame Python loops.
+
+The old blur / feedback effects survive as **optional post-processing toggles**
+applied after the weave, off by default.
 
 ---
 
@@ -33,59 +73,42 @@ bundles its own ffmpeg, so no system ffmpeg install is needed.
 
 ---
 
-## Using it
+## Using it — one screen
 
-1. **Import / Scrape tab** — drag video files in and click *Import*, or paste a
-   folder path to import every clip in it. (Some sample clips ship in `library/`
-   already, so you can render immediately.)
-2. **Library tab** — thumbnails of everything currently available.
-3. **Compose tab** — an ordered effect chain: **Combine → Feedback → Blur**.
-   - **Layers.** Enable 2+ layers, pick a clip each, and set a **temporal offset**
-     (frames): the layer shows the moment `t − offset`, wrapping around the clip.
-     **Use the same clip in two layers with different offsets** to turn one clip
-     into many moments — that's the whole idea. Each layer also has scale + opacity.
-   - **1 · Combine** — `interlace` (the signature weave: strip width 1–3 px = fine
-     lenticular shimmer, wider = bands; orientation; scroll speed for
-     parallax-in-time; feather to soften seams) **or** `superimpose` (blend N layers
-     with a mode: normal / add / screen / multiply / difference + mix) **or** none.
-   - **2 · Feedback trails** (hyper-imposition) — blend each frame into a decaying
-     accumulator of prior output for echo/trails. *Persistence* + mode
-     (max / mean / add).
-   - **3 · Blur** — temporal average (long exposure), motion-compensated optical
-     flow, Gaussian, frequency-domain low-pass, or luminance-guided.
-   - **Preview** renders a short, downscaled segment (fast). **Render** does the
-     full clip and gives you a download.
-   - **Presets** — *Save* the current composition to JSON, or *Load & render* a
-     saved one (reproduce a render / share a look with a collaborator). Three
-     starter presets ship in `compositions/`.
+1. **Drop clips** into the file box (sample clips ship in `library/`, so you can
+   render immediately). Every loaded clip appears in the **source pool**; the
+   checked set, in order, is the N videos the weave rotates through.
+2. Set the **weave controls**: strip width, frame step, orientation, source mode.
+3. Optional **post toggles** (off by default): feedback trails (decaying echo of
+   prior output) and one blur (temporal average / optical-flow / Gaussian /
+   FFT low-pass / luminance-guided) with a single amount slider.
+4. **Preview** renders a short, downscaled segment (fast). **Render** does the
+   full length and gives you a download.
+
+The small Telegram control (channel + max count) only activates when `.env`
+credentials exist — see below.
 
 ---
 
 ## How it works (architecture)
 
-Ingest and effects are **decoupled** — the compositor never imports the scraper.
-
 ```
-config.py        paths + working-space defaults
+config.py        paths + working-space defaults (incl. MAX_CLIP_SECONDS decode cap)
 core.py          device detection (CPU / optional CUDA), RenderContext
-frames/clip.py   decode video -> normalised (N,H,W,3) uint8 RGB stack; fps/size resample; cache
-ingest/local.py  credential-free import of files / folders into library/
-effects/         Effect base class + registry; interlace.py (the signature weave)
-composition.py   Composition = N time-offset layers + an ordered effect chain -> frames
+frames/clip.py   decode video -> normalised (T,H,W,3) uint8 RGB stack; fps/size resample; cache
+ingest/local.py  credential-free import of files into library/
+ingest/telegram.py  optional wrapper around the Corpus Editor scraper
+weave.py         THE CORE: strip time-displacement weave (slit-scan gather)
+effects/         optional post filters: feedback trails + blur suite
 render/writer.py frame stack -> H.264 mp4
-app.py           Gradio UI
+app.py           single-screen Gradio UI (dark)
 ```
 
-**Data model.** A `Composition` holds N source **layers** (clip + temporal offset +
-scale) and an ordered **effect chain**. Each effect transforms a *list of layers*
-(each layer an `(T,H,W,3)` array); *combiner* effects like interlace collapse the
-layers into one. Everything is vectorised with numpy/OpenCV — no per-pixel Python
-loops.
+Long sources are truncated at `MAX_CLIP_SECONDS` (default 90 s) at decode time so
+a stray full-length video can't eat all your RAM.
 
 **Extending effects.** Add a subclass of `effects.base.Effect`, give it a `PARAMS`
-schema, decorate it with `@register`, and import it in `effects/__init__.py`. It
-becomes available to any composition. (Superimposition and the blur suite plug in
-here.)
+schema, decorate it with `@register`, and import it in `effects/__init__.py`.
 
 ---
 
@@ -98,8 +121,8 @@ matching torch build — for an RTX 50-series (Blackwell) card:
 ./venv/bin/python -m pip install torch --index-url https://download.pytorch.org/whl/cu128
 ```
 
-The tool auto-detects `torch` + CUDA at runtime (shown as the *Compute* line in the
-UI) and falls back to CPU when it isn't present.
+CUDA is auto-detected at runtime and stays silent in the backend; everything
+falls back to CPU when torch isn't present.
 
 ---
 
@@ -110,36 +133,22 @@ If — and only if — you want to pull footage from public Telegram channels:
 1. Get API credentials at <https://my.telegram.org> → *API development tools*.
 2. Copy `.env.example` to `.env` and fill in `TG_API_ID` / `TG_API_HASH` / `TG_PHONE`.
 
-Without a `.env`, the scrape tab simply shows a friendly notice and the rest of the
-app works normally. Downloaded videos land in `library/` like any other clip.
+Without a `.env`, the scrape control is simply disabled and the rest of the app
+works normally. Downloaded videos land in `library/` like any other clip.
 
 ---
 
-## Effects reference
+## Post-processing reference
 
-| Effect | Kind | Key params |
-| --- | --- | --- |
-| `interlace` | combiner | strip_width, orientation, phase_speed, feather |
-| `superimpose` | combiner | blend (normal/add/screen/multiply/difference), mix; per-layer opacity |
-| `feedback` | filter | decay (persistence), mode (max/mean/add) |
-| `temporal_average` | filter | window (frames) |
-| `motion_flow_blur` | filter | taps, strength (Farneback optical flow) |
-| `gaussian_blur` | filter | sigma |
-| `fft_lowpass` | filter | cutoff (keep fraction) |
-| `luminance_blur` | filter | max_sigma, levels, invert |
+| Effect | Key params |
+| --- | --- |
+| `feedback` | decay (persistence), mode (max/mean/add) |
+| `temporal_average` | window (frames) |
+| `motion_flow_blur` | taps, strength (Farneback optical flow) |
+| `gaussian_blur` | sigma |
+| `fft_lowpass` | cutoff (keep fraction) |
+| `luminance_blur` | max_sigma, levels, invert |
 
-## Build status
-
-- [x] **Phase 0** — scaffold, deps, app launches
-- [x] **Phase 1** — local import, frame extraction, render passthrough
-- [x] **Phase 2** — interlacing / lenticular effect, Preview + Render
-- [x] **Phase 3** — superimposition + hyper-imposition (feedback trails)
-- [x] **Phase 4** — blur suite (temporal averaging, optical-flow, Gaussian, FFT, luminance-guided)
-- [x] **Phase 5** — Telegram scraper wired into the Import tab (credential-gated)
-- [x] **Phase 6** — save / load presets in the UI; starter presets in `compositions/`
-
-**Left as extension points** (documented in `effects/blur.py`): edge-guided
-bilateral, anisotropic diffusion, depth-based, dynamic-kernel and full
-spatio-temporal 3-D blurs, plus cross-source blur variants (run *before* the
-combine stage where 2+ layers still exist). Add an `Effect` subclass, decorate it
-`@register`, import it in `effects/__init__.py` — it wires itself into the engine.
+In the UI each blur is driven by one 0–1 *amount* slider mapped onto its primary
+parameter; the full parameter set is available programmatically via
+`effects.build(name, params)`.
