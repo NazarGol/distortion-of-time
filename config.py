@@ -11,27 +11,45 @@ import os
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-LIBRARY_DIR = os.path.join(ROOT, "library")   # clips live here
-CACHE_DIR   = os.path.join(ROOT, "cache")     # decoded-frame + thumb cache
-OUTPUT_DIR  = os.path.join(ROOT, "output")    # rendered mp4s
+LIBRARY_DIR = os.path.join(ROOT, "library")   # source clips land here (import/scrape)
+POOL_DIR    = os.path.join(ROOT, "pool")       # decomposed frames on disk — the material
+CACHE_DIR   = os.path.join(ROOT, "cache")      # thumbnails
+OUTPUT_DIR  = os.path.join(ROOT, "output")     # rendered mp4s
 
-for _d in (LIBRARY_DIR, CACHE_DIR, OUTPUT_DIR):
+INDEX_DB = os.path.join(POOL_DIR, "index.db")  # SQLite index over the frame pool
+WEB_DIR  = os.path.join(ROOT, "web")           # static frontend
+
+for _d in (LIBRARY_DIR, POOL_DIR, CACHE_DIR, OUTPUT_DIR):
     os.makedirs(_d, exist_ok=True)
 
 VIDEO_EXTS = (".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v")
 
-# ── Working-space defaults ─────────────────────────────────────────────────────
-# The compositor normalises every layer to a common working resolution + fps.
-# Degraded conflict footage is low-res anyway, so modest defaults keep the look
-# and stay fast.
-DEFAULT_WIDTH  = 640
-DEFAULT_HEIGHT = 360
-DEFAULT_FPS    = 12
+# ── Working space ──────────────────────────────────────────────────────────────
+# Every video is decomposed to this common resolution at pool-ingest time, so all
+# pool frames share H×W and the weave can stitch strips from any of them. This is
+# fixed corpus-wide (not a per-render knob) — 16:9, sized for degraded footage.
+WORKING_WIDTH  = 640
+WORKING_HEIGHT = 360
 
-# Preview runs on a short, downscaled segment so the UI stays responsive.
-PREVIEW_MAX_FRAMES = 36
-PREVIEW_MAX_WIDTH  = 384
+# Working fps = each source clip's own fps (probed at decompose). Fall back to
+# this when a container doesn't report one. Never silently downsample — each strip
+# advances one *frame*, so fps is the effect's temporal resolution.
+FPS_FALLBACK = 24
 
-# Long sources (full scraped posts, etc.) are truncated at decode time so a
-# single clip can't eat gigabytes of RAM. Raise if you genuinely need more.
+# Long sources are truncated at decompose so one video can't dominate the pool.
 MAX_CLIP_SECONDS = 90
+
+# ── Pool storage / streaming render ────────────────────────────────────────────
+JPEG_QUALITY     = 85    # pool frames are JPEG (degraded footage — lossy is fine)
+FRAME_CACHE_SIZE = 512   # decoded pool frames kept resident during a render (LRU)
+THUMB_WIDTH      = 160    # filmstrip thumbnail width
+
+# ── Preprocessing ──────────────────────────────────────────────────────────────
+BAR_LUMA_THRESH  = 18    # a row/col staying below this (0–255) across sampled
+                          # frames is treated as a letterbox/pillarbox bar
+BAR_SAMPLE_FRAMES = 12   # frames sampled per video for bar + exposure analysis
+EXPOSURE_TARGET_MEAN = 112.0   # normalise each video's luminance toward these so
+EXPOSURE_TARGET_STD  = 52.0    # adjacent strips from different sources don't clash
+
+# ── Preview ────────────────────────────────────────────────────────────────────
+PREVIEW_MAX_FRAMES = 48   # a Preview render is capped to this many output frames

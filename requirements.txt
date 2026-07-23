@@ -6,7 +6,11 @@ opencv-python==5.0.0.93
 imageio==2.37.4
 imageio-ffmpeg==0.6.0        # bundles its own ffmpeg; no system ffmpeg needed
 python-dotenv==1.2.2
-gradio==6.20.0
+
+# Web UI — FastAPI serving one static instrument page (no Gradio).
+fastapi==0.121.1
+uvicorn==0.38.0
+python-multipart==0.0.20     # multipart uploads for the corpus import endpoint
 
 # Telegram scraper only (optional — the compositor never imports these):
 telethon==1.44.0

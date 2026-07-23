@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distortion of Time</title>
+<style>
+  :root{
+    --bg:#08080a; --panel:#0d0d10; --ink:#d2d2d6; --dim:#6a6a72;
+    --dimmer:#3a3a42; --line:rgba(255,255,255,.09); --accent:#e9e9ee;
+    --mono:"SF Mono",ui-monospace,"DejaVu Sans Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--mono);
+    font-size:13px; line-height:1.4; -webkit-font-smoothing:antialiased;
+    display:flex; flex-direction:column; height:100vh; overflow:hidden;
+  }
+  .lbl{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim)}
+  .rule{border-bottom:1px solid var(--line)}
+  button{font-family:var(--mono); cursor:pointer; background:none; border:none; color:inherit}
+
+  /* header */
+  header{display:flex; justify-content:space-between; align-items:baseline;
+    padding:14px 20px; border-bottom:1px solid var(--line)}
+  header .title{font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--ink)}
+  header .stats{font-size:11px; letter-spacing:.12em; color:var(--dim)}
+  header .stats b{color:var(--ink); font-weight:400}
+
+  /* preview */
+  .stage{flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
+    padding:18px 20px 10px; gap:10px}
+  .screen{flex:1 1 auto; min-height:0; background:#000; position:relative;
+    display:flex; align-items:center; justify-content:center; overflow:hidden}
+  .screen video{max-width:100%; max-height:100%; display:block}
+  .screen .placeholder{color:var(--dimmer); font-size:11px; letter-spacing:.2em; text-transform:uppercase}
+  .screen.busy::after{content:"RENDERING…"; position:absolute; color:var(--ink);
+    font-size:11px; letter-spacing:.25em}
+
+  /* scrub */
+  .scrub{display:flex; align-items:center; gap:14px}
+  .track{flex:1 1 auto; height:3px; background:#1b1b20; position:relative; cursor:pointer}
+  .track .fill{position:absolute; left:0; top:0; bottom:0; width:0; background:var(--accent)}
+  .track .head{position:absolute; top:50%; width:2px; height:11px; background:var(--accent);
+    transform:translate(-50%,-50%); left:0}
+  .time{font-size:11px; color:var(--dim); letter-spacing:.08em; min-width:80px; text-align:right}
+
+  /* controls */
+  .controls{display:grid; grid-template-columns:repeat(4,1fr); gap:26px;
+    padding:16px 20px 6px; border-top:1px solid var(--line)}
+  .ctl{display:flex; flex-direction:column; gap:9px}
+  .ctl .val{font-size:12px; color:var(--ink); letter-spacing:.04em}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:2px;
+    background:var(--dimmer); outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none;
+    width:9px; height:14px; background:var(--accent); cursor:pointer; border-radius:0}
+  input[type=range]::-moz-range-thumb{width:9px; height:14px; background:var(--accent);
+    cursor:pointer; border:none; border-radius:0}
+  .seg{display:flex; border:1px solid var(--line)}
+  .seg + .seg{margin-top:6px}
+  .seg button{flex:1; padding:5px 4px; font-size:10px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--dim); border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:none}
+  .seg button.on{background:var(--accent); color:#08080a}
+
+  .derived{padding:4px 20px 14px; font-size:11px; color:var(--dim); letter-spacing:.06em}
+  .derived b{color:var(--ink); font-weight:400}
+
+  /* filmstrip + actions */
+  .foot{display:flex; align-items:center; gap:16px; padding:12px 20px;
+    border-top:1px solid var(--line)}
+  .strip{flex:1 1 auto; display:flex; gap:5px; overflow:hidden; align-items:center}
+  .strip img{height:40px; width:auto; opacity:.62; cursor:pointer; filter:grayscale(.2)}
+  .strip img:hover{opacity:.9}
+  .strip img.sel{opacity:1; outline:1px solid var(--accent); outline-offset:-1px}
+  .strip .more{color:var(--dim); font-size:11px; letter-spacing:.1em; padding:0 6px; white-space:nowrap}
+  .foot .act{padding:9px 16px; font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+    border:1px solid var(--line); color:var(--dim)}
+  .foot .act:hover{color:var(--ink); border-color:var(--dim)}
+  .foot .act.render{background:var(--accent); color:#08080a; border-color:var(--accent)}
+  .foot .act.render:hover{background:#fff}
+
+  /* corpus overlay */
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.72); display:none;
+    align-items:center; justify-content:center; z-index:10}
+  .overlay.open{display:flex}
+  .sheet{background:var(--panel); border:1px solid var(--line); width:min(560px,92vw);
+    padding:26px 28px; display:flex; flex-direction:column; gap:20px}
+  .sheet h2{font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--ink); font-weight:400}
+  .sheet .grp{display:flex; flex-direction:column; gap:9px}
+  .sheet .row{display:flex; gap:8px; align-items:center}
+  .sheet input[type=text],.sheet input[type=number]{flex:1; background:#000; border:1px solid var(--line);
+    color:var(--ink); font-family:var(--mono); font-size:12px; padding:8px 10px}
+  .sheet input:disabled{opacity:.4}
+  .sheet button.do{padding:8px 14px; font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+    border:1px solid var(--line); color:var(--ink)}
+  .sheet button.do:hover{border-color:var(--dim)}
+  .sheet .status{font-size:11px; color:var(--dim); letter-spacing:.05em; min-height:15px}
+  .sheet .close{align-self:flex-end; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim)}
+  .hint{font-size:10px; color:var(--dimmer); letter-spacing:.05em}
+</style>
+</head>
+<body>
+  <header>
+    <div class="title">Distortion&nbsp;of&nbsp;Time</div>
+    <div class="stats" id="stats">— clips · — frames</div>
+  </header>
+
+  <div class="stage">
+    <div class="screen" id="screen">
+      <div class="placeholder" id="ph">no render yet — press render</div>
+      <video id="vid" loop playsinline style="display:none"></video>
+    </div>
+    <div class="scrub">
+      <div class="track" id="track">
+        <div class="fill" id="fill"></div>
+        <div class="head" id="head"></div>
+      </div>
+      <div class="time" id="time">0:00 / 0:00</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="ctl">
+      <span class="lbl">Strip width</span>
+      <input type="range" id="sw" min="1" max="48" step="1" value="2">
+      <span class="val"><b id="swv">2</b> px</span>
+    </div>
+    <div class="ctl">
+      <span class="lbl">Time span</span>
+      <input type="range" id="span" min="0.2" max="8" step="0.1" value="1.5">
+      <span class="val"><b id="spanv">1.5</b> s</span>
+    </div>
+    <div class="ctl">
+      <span class="lbl">Direction</span>
+      <div class="seg" id="dir">
+        <button data-v="forward" class="on">Forward</button>
+        <button data-v="back">Back</button>
+      </div>
+      <div class="seg" id="axis">
+        <button data-v="vertical" class="on">Vertical</button>
+        <button data-v="horizontal">Horizontal</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <span class="lbl">Draw from</span>
+      <div class="seg" id="draw">
+        <button data-v="corpus" class="on">Whole corpus</button>
+        <button data-v="one">One clip</button>
+      </div>
+      <span class="val" id="drawnote" style="color:var(--dim);font-size:10px;letter-spacing:.08em">rotating across pool</span>
+    </div>
+  </div>
+  <div class="derived" id="derived">—</div>
+
+  <div class="foot">
+    <div class="strip" id="strip"></div>
+    <button class="act" id="corpusBtn">Corpus</button>
+    <button class="act render" id="renderBtn">Render</button>
+  </div>
+
+  <!-- corpus management -->
+  <div class="overlay" id="overlay">
+    <div class="sheet">
+      <button class="close" id="closeBtn">Close ✕</button>
+      <h2>Corpus</h2>
+      <div class="grp">
+        <span class="lbl">Import video files</span>
+        <div class="row">
+          <input type="file" id="files" multiple accept="video/*" style="color:var(--dim);font-size:11px">
+          <button class="do" id="importBtn">Import</button>
+        </div>
+        <span class="hint">decomposed into frames on disk · bars cropped · exposure matched</span>
+      </div>
+      <div class="grp">
+        <span class="lbl">Decompose library</span>
+        <div class="row">
+          <button class="do" id="decompBtn">Decompose any new library clips</button>
+        </div>
+      </div>
+      <div class="grp">
+        <span class="lbl">Telegram scrape (optional)</span>
+        <div class="row">
+          <input type="text" id="chan" placeholder="channel name" disabled>
+          <input type="number" id="cnt" value="5" min="1" max="30" style="max-width:70px" disabled>
+          <button class="do" id="scrapeBtn" disabled>Scrape</button>
+        </div>
+        <span class="hint" id="tgHint">add .env credentials to enable</span>
+      </div>
+      <div class="status" id="sheetStatus"></div>
+    </div>
+  </div>
+
+<script>
+const $ = s => document.querySelector(s);
+const state = {fps:24, width:640, dir:"forward", axis:"vertical", draw:"corpus",
+               videos:[], selected:null};
+
+function fmtTime(t){ t=Math.max(0,t||0); const m=Math.floor(t/60),
+  s=Math.floor(t%60).toString().padStart(2,'0'); return `${m}:${s}`; }
+
+async function loadStats(){
+  const s = await (await fetch('/api/stats')).json();
+  state.fps = s.fps || 24; state.width = s.width || 640;
+  $('#stats').innerHTML = `<b>${s.clips}</b> clips · <b>${s.frames.toLocaleString()}</b> frames`;
+  const tg = s.telegram || {ok:false,msg:''};
+  ['chan','cnt','scrapeBtn'].forEach(id=> $('#'+id).disabled = !tg.ok);
+  if(tg.msg) $('#tgHint').textContent = tg.ok ? 'ready' : tg.msg.replace(/[🔒⚠️]/g,'').trim();
+  updateDerived();
+}
+
+async function loadCorpus(){
+  const c = await (await fetch('/api/corpus')).json();
+  state.videos = c.videos;
+  const strip = $('#strip'); strip.innerHTML='';
+  const MAX = 14;
+  c.videos.slice(0,MAX).forEach(v=>{
+    const img = document.createElement('img');
+    img.src = '/thumb/'+v.video_id; img.title = v.name; img.dataset.id = v.video_id;
+    if(state.selected===v.video_id) img.classList.add('sel');
+    img.onclick = ()=>{ selectClip(v.video_id); };
+    strip.appendChild(img);
+  });
+  if(c.videos.length>MAX){
+    const more=document.createElement('span'); more.className='more';
+    more.textContent='+'+(c.videos.length-MAX); strip.appendChild(more);
+  }
+  if(!state.selected && c.videos.length) state.selected=c.videos[0].video_id;
+}
+
+function selectClip(id){
+  state.selected=id;
+  setSeg('draw','one');
+  document.querySelectorAll('#strip img').forEach(i=>i.classList.toggle('sel',i.dataset.id===id));
+}
+
+function updateDerived(){
+  const sw = Math.max(1, +$('#sw').value);
+  const span = +$('#span').value;
+  const axisLen = state.axis==='vertical' ? state.width : 360;
+  const nStrips = Math.ceil(axisLen/sw);
+  const fps = state.fps;
+  const fpsStrip = span*fps/nStrips;
+  $('#derived').innerHTML =
+    `<b>${nStrips}</b> strips · <b>${fpsStrip.toFixed(2)}</b> frames per strip · `+
+    `frame holds <b>${span.toFixed(1)}s</b> of time`;
+}
+
+function setSeg(group, val){
+  const map={dir:'dir',axis:'axis',draw:'draw'};
+  const el = $('#'+map[group]);
+  el.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.v===val));
+  state[group]=val;
+  if(group==='draw'){
+    $('#drawnote').textContent = val==='one' ? 'single clip · slit-scan' : 'rotating across pool';
+  }
+  updateDerived();
+}
+
+// controls wiring
+$('#sw').oninput = e=>{ $('#swv').textContent=e.target.value; updateDerived(); };
+$('#span').oninput = e=>{ $('#spanv').textContent=(+e.target.value).toFixed(1); updateDerived(); };
+['dir','axis','draw'].forEach(g=>{
+  $('#'+g).querySelectorAll('button').forEach(b=> b.onclick=()=>setSeg(g,b.dataset.v));
+});
+
+// render
+$('#renderBtn').onclick = async ()=>{
+  const screen=$('#screen'); screen.classList.add('busy'); $('#ph').style.display='none';
+  const fd=new FormData();
+  fd.append('strip_width', $('#sw').value);
+  fd.append('span_seconds', $('#span').value);
+  fd.append('direction', state.dir);
+  fd.append('orientation', state.axis);
+  fd.append('draw_from', state.draw);
+  fd.append('video_id', state.selected||'');
+  try{
+    const r = await (await fetch('/api/render',{method:'POST',body:fd})).json();
+    if(r.error){ $('#ph').textContent=r.error; $('#ph').style.display='block'; }
+    else{
+      const v=$('#vid'); v.src=r.url+'?t='+Date.now(); v.style.display='block';
+      v.play();
+      $('#derived').innerHTML += ` &nbsp;·&nbsp; rendered <b>${r.frames}</b>f in <b>${r.wall_s.toFixed(1)}s</b>`;
+    }
+  }catch(err){ $('#ph').textContent='render failed: '+err; $('#ph').style.display='block'; }
+  screen.classList.remove('busy');
+};
+
+// scrub bar bound to the video element
+const vid=$('#vid');
+vid.ontimeupdate = ()=>{
+  const p = vid.duration ? vid.currentTime/vid.duration : 0;
+  $('#fill').style.width=(p*100)+'%'; $('#head').style.left=(p*100)+'%';
+  $('#time').textContent=`${fmtTime(vid.currentTime)} / ${fmtTime(vid.duration)}`;
+};
+$('#track').onclick = e=>{
+  const rect=e.currentTarget.getBoundingClientRect();
+  if(vid.duration) vid.currentTime = ((e.clientX-rect.left)/rect.width)*vid.duration;
+};
+$('#screen').onclick = e=>{ if(e.target===vid){ vid.paused?vid.play():vid.pause(); } };
+
+// corpus overlay
+$('#corpusBtn').onclick=()=>$('#overlay').classList.add('open');
+$('#closeBtn').onclick=()=>$('#overlay').classList.remove('open');
+async function refresh(){ await loadStats(); await loadCorpus(); }
+async function post(url, fd, msg){
+  $('#sheetStatus').textContent=msg;
+  try{ const r=await (await fetch(url,{method:'POST',body:fd})).json();
+    $('#sheetStatus').textContent = (r.message||'') + ` · ${r.imported||r.decomposed||0} added · ${r.clips} clips / ${r.frames} frames`;
+    await refresh();
+  }catch(e){ $('#sheetStatus').textContent='failed: '+e; }
+}
+$('#importBtn').onclick=()=>{
+  const files=$('#files').files; if(!files.length){$('#sheetStatus').textContent='choose files first';return;}
+  const fd=new FormData(); [...files].forEach(f=>fd.append('files',f));
+  post('/api/import', fd, 'importing + decomposing…');
+};
+$('#decompBtn').onclick=()=> post('/api/decompose', new FormData(), 'decomposing library…');
+$('#scrapeBtn').onclick=()=>{
+  const fd=new FormData(); fd.append('channel',$('#chan').value); fd.append('count',$('#cnt').value);
+  post('/api/scrape', fd, 'scraping + decomposing…');
+};
+
+refresh();
+</script>
+</body>
+</html>

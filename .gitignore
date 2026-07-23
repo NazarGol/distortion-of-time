@@ -7,6 +7,8 @@ venv/
 # Generated content
 cache/*
 output/*
+# pool/ holds decomposed frames + the SQLite index — large and regenerable:
+pool/*
 __pycache__/
 *.pyc
 *.log
@@ -14,6 +16,7 @@ __pycache__/
 # Keep the folders themselves (so a fresh clone has them) but not their contents:
 !cache/.gitkeep
 !output/.gitkeep
+!pool/.gitkeep
 
 # Library: commit only the shipped sample clips.
 # Anything you import or scrape yourself stays local.
