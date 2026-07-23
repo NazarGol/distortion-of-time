@@ -8,115 +8,114 @@
   :root{
     --bg:#08080a; --panel:#0d0d10; --ink:#d2d2d6; --dim:#6a6a72;
     --dimmer:#3a3a42; --line:rgba(255,255,255,.09); --accent:#e9e9ee;
+    --warn:#d8a35a;
     --mono:"SF Mono",ui-monospace,"DejaVu Sans Mono",Menlo,Consolas,monospace;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
+  *{box-sizing:border-box; margin:0; padding:0}
   html,body{height:100%}
-  body{
-    background:var(--bg); color:var(--ink); font-family:var(--mono);
-    font-size:13px; line-height:1.4; -webkit-font-smoothing:antialiased;
-    display:flex; flex-direction:column; height:100vh; overflow:hidden;
-  }
+  body{background:var(--bg); color:var(--ink); font-family:var(--mono); font-size:13px;
+    line-height:1.4; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;
+    height:100vh; overflow:hidden}
   .lbl{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim)}
-  .rule{border-bottom:1px solid var(--line)}
   button{font-family:var(--mono); cursor:pointer; background:none; border:none; color:inherit}
+  input{font-family:var(--mono)}
 
-  /* header */
   header{display:flex; justify-content:space-between; align-items:baseline;
     padding:14px 20px; border-bottom:1px solid var(--line)}
-  header .title{font-size:11px; letter-spacing:.32em; text-transform:uppercase; color:var(--ink)}
+  header .title{font-size:11px; letter-spacing:.32em; text-transform:uppercase}
   header .stats{font-size:11px; letter-spacing:.12em; color:var(--dim)}
   header .stats b{color:var(--ink); font-weight:400}
+  header .sel{color:var(--accent)}
 
-  /* preview */
-  .stage{flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
-    padding:18px 20px 10px; gap:10px}
-  .screen{flex:1 1 auto; min-height:0; background:#000; position:relative;
-    display:flex; align-items:center; justify-content:center; overflow:hidden}
+  .stage{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; padding:16px 20px 8px; gap:9px}
+  .screen{flex:1 1 auto; min-height:0; background:#000; position:relative; display:flex;
+    align-items:center; justify-content:center; overflow:hidden}
   .screen video{max-width:100%; max-height:100%; display:block}
-  .screen .placeholder{color:var(--dimmer); font-size:11px; letter-spacing:.2em; text-transform:uppercase}
-  .screen.busy::after{content:"RENDERING…"; position:absolute; color:var(--ink);
-    font-size:11px; letter-spacing:.25em}
+  .screen .placeholder{color:var(--dimmer); font-size:11px; letter-spacing:.2em; text-transform:uppercase; text-align:center; padding:0 20px}
+  .screen.busy::after{content:"RENDERING…"; position:absolute; color:var(--ink); font-size:11px; letter-spacing:.25em}
 
-  /* scrub */
   .scrub{display:flex; align-items:center; gap:14px}
   .track{flex:1 1 auto; height:3px; background:#1b1b20; position:relative; cursor:pointer}
   .track .fill{position:absolute; left:0; top:0; bottom:0; width:0; background:var(--accent)}
-  .track .head{position:absolute; top:50%; width:2px; height:11px; background:var(--accent);
-    transform:translate(-50%,-50%); left:0}
-  .time{font-size:11px; color:var(--dim); letter-spacing:.08em; min-width:80px; text-align:right}
+  .track .head{position:absolute; top:50%; width:2px; height:11px; background:var(--accent); transform:translate(-50%,-50%); left:0}
+  .time{font-size:11px; color:var(--dim); letter-spacing:.08em; min-width:82px; text-align:right}
 
-  /* controls */
-  .controls{display:grid; grid-template-columns:repeat(4,1fr); gap:26px;
-    padding:16px 20px 6px; border-top:1px solid var(--line)}
+  .controls{display:grid; grid-template-columns:1.1fr 1.5fr 1fr; gap:26px;
+    padding:14px 20px 4px; border-top:1px solid var(--line)}
   .ctl{display:flex; flex-direction:column; gap:9px}
-  .ctl .val{font-size:12px; color:var(--ink); letter-spacing:.04em}
-  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:2px;
-    background:var(--dimmer); outline:none}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; appearance:none;
-    width:9px; height:14px; background:var(--accent); cursor:pointer; border-radius:0}
-  input[type=range]::-moz-range-thumb{width:9px; height:14px; background:var(--accent);
-    cursor:pointer; border:none; border-radius:0}
+  .ctl .val{font-size:12px; letter-spacing:.04em}
+  .ctl .val b{color:var(--ink)}
+  .row2{display:flex; align-items:center; gap:12px}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:2px; background:var(--dimmer); outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:9px; height:14px; background:var(--accent); cursor:pointer; border-radius:0}
+  input[type=range]::-moz-range-thumb{width:9px; height:14px; background:var(--accent); cursor:pointer; border:none; border-radius:0}
+  input.num{width:64px; background:#000; border:1px solid var(--line); color:var(--ink); font-size:12px; padding:5px 6px; text-align:right}
+  .fps-field{display:flex; flex-direction:column; gap:5px}
+  .fps-field .lbl{font-size:9px}
   .seg{display:flex; border:1px solid var(--line)}
   .seg + .seg{margin-top:6px}
-  .seg button{flex:1; padding:5px 4px; font-size:10px; letter-spacing:.12em;
-    text-transform:uppercase; color:var(--dim); border-right:1px solid var(--line)}
+  .seg button{flex:1; padding:5px 4px; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); border-right:1px solid var(--line)}
   .seg button:last-child{border-right:none}
   .seg button.on{background:var(--accent); color:#08080a}
 
-  .derived{padding:4px 20px 14px; font-size:11px; color:var(--dim); letter-spacing:.06em}
+  .derived{padding:6px 20px 12px; font-size:11px; color:var(--dim); letter-spacing:.05em}
   .derived b{color:var(--ink); font-weight:400}
+  .derived .flag{color:var(--warn)}
 
-  /* filmstrip + actions */
-  .foot{display:flex; align-items:center; gap:16px; padding:12px 20px;
-    border-top:1px solid var(--line)}
-  .strip{flex:1 1 auto; display:flex; gap:5px; overflow:hidden; align-items:center}
-  .strip img{height:40px; width:auto; opacity:.62; cursor:pointer; filter:grayscale(.2)}
-  .strip img:hover{opacity:.9}
-  .strip img.sel{opacity:1; outline:1px solid var(--accent); outline-offset:-1px}
-  .strip .more{color:var(--dim); font-size:11px; letter-spacing:.1em; padding:0 6px; white-space:nowrap}
-  .foot .act{padding:9px 16px; font-size:10px; letter-spacing:.18em; text-transform:uppercase;
-    border:1px solid var(--line); color:var(--dim)}
+  .foot{display:flex; align-items:center; gap:14px; padding:10px 20px; border-top:1px solid var(--line)}
+  .stripwrap{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:5px}
+  .striptools{display:flex; gap:14px; align-items:center}
+  .striptools button{font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim)}
+  .striptools button:hover{color:var(--ink)}
+  .strip{display:flex; gap:6px; overflow-x:auto; overflow-y:hidden; padding-bottom:4px; align-items:center}
+  .strip::-webkit-scrollbar{height:6px}
+  .strip::-webkit-scrollbar-thumb{background:#26262c}
+  .thumb{position:relative; flex:0 0 auto; cursor:pointer; user-select:none}
+  .thumb img{height:46px; width:auto; display:block; opacity:.32; filter:grayscale(.5); transition:opacity .1s}
+  .thumb:hover img{opacity:.6}
+  .thumb.sel img{opacity:1; filter:none; outline:1px solid var(--accent); outline-offset:-1px}
+  .thumb .ord{position:absolute; left:2px; bottom:2px; font-size:9px; color:var(--accent);
+    background:rgba(0,0,0,.6); padding:0 3px; display:none}
+  .thumb.sel .ord{display:block}
+  .thumb .del{position:absolute; top:2px; right:2px; width:15px; height:15px; line-height:14px;
+    text-align:center; font-size:11px; background:rgba(0,0,0,.7); color:var(--ink); display:none}
+  .thumb:hover .del{display:block}
+  .thumb .del:hover{background:#a33; color:#fff}
+  .thumb.drag{opacity:.4}
+  .foot .act{padding:9px 16px; font-size:10px; letter-spacing:.18em; text-transform:uppercase; border:1px solid var(--line); color:var(--dim)}
   .foot .act:hover{color:var(--ink); border-color:var(--dim)}
   .foot .act.render{background:var(--accent); color:#08080a; border-color:var(--accent)}
   .foot .act.render:hover{background:#fff}
 
-  /* corpus overlay */
-  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.72); display:none;
-    align-items:center; justify-content:center; z-index:10}
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; z-index:10}
   .overlay.open{display:flex}
-  .sheet{background:var(--panel); border:1px solid var(--line); width:min(560px,92vw);
-    padding:26px 28px; display:flex; flex-direction:column; gap:20px}
-  .sheet h2{font-size:11px; letter-spacing:.24em; text-transform:uppercase; color:var(--ink); font-weight:400}
-  .sheet .grp{display:flex; flex-direction:column; gap:9px}
-  .sheet .row{display:flex; gap:8px; align-items:center}
-  .sheet input[type=text],.sheet input[type=number]{flex:1; background:#000; border:1px solid var(--line);
-    color:var(--ink); font-family:var(--mono); font-size:12px; padding:8px 10px}
+  .sheet{background:var(--panel); border:1px solid var(--line); width:min(560px,92vw); padding:24px 26px; display:flex; flex-direction:column; gap:18px}
+  .sheet h2{font-size:11px; letter-spacing:.24em; text-transform:uppercase; font-weight:400}
+  .sheet .grp{display:flex; flex-direction:column; gap:8px}
+  .sheet .rr{display:flex; gap:8px; align-items:center}
+  .sheet input[type=text],.sheet input[type=number]{flex:1; background:#000; border:1px solid var(--line); color:var(--ink); font-size:12px; padding:8px 10px}
   .sheet input:disabled{opacity:.4}
-  .sheet button.do{padding:8px 14px; font-size:10px; letter-spacing:.16em; text-transform:uppercase;
-    border:1px solid var(--line); color:var(--ink)}
+  .sheet button.do{padding:8px 14px; font-size:10px; letter-spacing:.16em; text-transform:uppercase; border:1px solid var(--line); color:var(--ink)}
   .sheet button.do:hover{border-color:var(--dim)}
-  .sheet .status{font-size:11px; color:var(--dim); letter-spacing:.05em; min-height:15px}
+  .sheet button.danger:hover{border-color:#a33; color:#e88}
+  .sheet .status{font-size:11px; color:var(--dim); min-height:15px}
   .sheet .close{align-self:flex-end; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim)}
-  .hint{font-size:10px; color:var(--dimmer); letter-spacing:.05em}
+  .hint{font-size:10px; color:var(--dimmer); letter-spacing:.04em}
 </style>
 </head>
 <body>
   <header>
     <div class="title">Distortion&nbsp;of&nbsp;Time</div>
-    <div class="stats" id="stats">— clips · — frames</div>
+    <div class="stats" id="stats">— clips · — frames &nbsp;·&nbsp; <span class="sel" id="selcount">0 of 0 selected</span></div>
   </header>
 
   <div class="stage">
     <div class="screen" id="screen">
-      <div class="placeholder" id="ph">no render yet — press render</div>
+      <div class="placeholder" id="ph">select clips below · set the weave · press render</div>
       <video id="vid" loop playsinline style="display:none"></video>
     </div>
     <div class="scrub">
-      <div class="track" id="track">
-        <div class="fill" id="fill"></div>
-        <div class="head" id="head"></div>
-      </div>
+      <div class="track" id="track"><div class="fill" id="fill"></div><div class="head" id="head"></div></div>
       <div class="time" id="time">0:00 / 0:00</div>
     </div>
   </div>
@@ -129,8 +128,14 @@
     </div>
     <div class="ctl">
       <span class="lbl">Time span</span>
-      <input type="range" id="span" min="0.2" max="8" step="0.1" value="1.5">
-      <span class="val"><b id="spanv">1.5</b> s</span>
+      <input type="range" id="span" min="0.1" max="20" step="0.05" value="1.5">
+      <div class="row2">
+        <span class="val">holds <b id="spanv">1.5</b>s</span>
+        <div class="fps-field">
+          <span class="lbl">frames / strip</span>
+          <input type="number" class="num" id="fps_ps" min="0.05" max="4" step="0.05" value="1">
+        </div>
+      </div>
     </div>
     <div class="ctl">
       <span class="lbl">Direction</span>
@@ -143,31 +148,29 @@
         <button data-v="horizontal">Horizontal</button>
       </div>
     </div>
-    <div class="ctl">
-      <span class="lbl">Draw from</span>
-      <div class="seg" id="draw">
-        <button data-v="corpus" class="on">Whole corpus</button>
-        <button data-v="one">One clip</button>
-      </div>
-      <span class="val" id="drawnote" style="color:var(--dim);font-size:10px;letter-spacing:.08em">rotating across pool</span>
-    </div>
   </div>
   <div class="derived" id="derived">—</div>
 
   <div class="foot">
-    <div class="strip" id="strip"></div>
+    <div class="stripwrap">
+      <div class="striptools">
+        <span class="lbl">Corpus — click to select · drag to reorder</span>
+        <button id="selAll">select all</button>
+        <button id="selNone">select none</button>
+      </div>
+      <div class="strip" id="strip"></div>
+    </div>
     <button class="act" id="corpusBtn">Corpus</button>
     <button class="act render" id="renderBtn">Render</button>
   </div>
 
-  <!-- corpus management -->
   <div class="overlay" id="overlay">
     <div class="sheet">
       <button class="close" id="closeBtn">Close ✕</button>
       <h2>Corpus</h2>
       <div class="grp">
         <span class="lbl">Import video files</span>
-        <div class="row">
+        <div class="rr">
           <input type="file" id="files" multiple accept="video/*" style="color:var(--dim);font-size:11px">
           <button class="do" id="importBtn">Import</button>
         </div>
@@ -175,18 +178,21 @@
       </div>
       <div class="grp">
         <span class="lbl">Decompose library</span>
-        <div class="row">
-          <button class="do" id="decompBtn">Decompose any new library clips</button>
-        </div>
+        <div class="rr"><button class="do" id="decompBtn">Decompose any new library clips</button></div>
       </div>
       <div class="grp">
         <span class="lbl">Telegram scrape (optional)</span>
-        <div class="row">
+        <div class="rr">
           <input type="text" id="chan" placeholder="channel name" disabled>
           <input type="number" id="cnt" value="5" min="1" max="30" style="max-width:70px" disabled>
           <button class="do" id="scrapeBtn" disabled>Scrape</button>
         </div>
         <span class="hint" id="tgHint">add .env credentials to enable</span>
+      </div>
+      <div class="grp">
+        <span class="lbl">Reset</span>
+        <div class="rr"><button class="do danger" id="wipeBtn">Wipe pool (keep library files)</button></div>
+        <span class="hint">clears all decomposed frames — re-add from your own footage</span>
       </div>
       <div class="status" id="sheetStatus"></div>
     </div>
@@ -194,135 +200,152 @@
 
 <script>
 const $ = s => document.querySelector(s);
-const state = {fps:24, width:640, dir:"forward", axis:"vertical", draw:"corpus",
-               videos:[], selected:null};
+const state = {fps:24, width:640, videos:[], order:[], selected:new Set(),
+               dir:"forward", axis:"vertical"};
 
-function fmtTime(t){ t=Math.max(0,t||0); const m=Math.floor(t/60),
-  s=Math.floor(t%60).toString().padStart(2,'0'); return `${m}:${s}`; }
+const fmtTime = t => { t=Math.max(0,t||0); const m=Math.floor(t/60),
+  s=Math.floor(t%60).toString().padStart(2,'0'); return `${m}:${s}`; };
+const fmtSpan = s => s>=10 ? s.toFixed(0)+'s' : s>=1 ? s.toFixed(1)+'s' : s.toFixed(2)+'s';
 
+function axisLen(){ return state.axis==='vertical' ? state.width : 360; }
+function nStrips(){ const sw=Math.max(1,+$('#sw').value); return Math.ceil(axisLen()/sw); }
+function fpsPerStrip(span){ return span*state.fps/nStrips(); }
+function spanForFps(fps_ps){ return fps_ps*nStrips()/state.fps; }
+
+// ── stats + selection count ──────────────────────────────────────────────
 async function loadStats(){
   const s = await (await fetch('/api/stats')).json();
-  state.fps = s.fps || 24; state.width = s.width || 640;
-  $('#stats').innerHTML = `<b>${s.clips}</b> clips · <b>${s.frames.toLocaleString()}</b> frames`;
-  const tg = s.telegram || {ok:false,msg:''};
-  ['chan','cnt','scrapeBtn'].forEach(id=> $('#'+id).disabled = !tg.ok);
-  if(tg.msg) $('#tgHint').textContent = tg.ok ? 'ready' : tg.msg.replace(/[🔒⚠️]/g,'').trim();
-  updateDerived();
+  state.fps=s.fps||24; state.width=s.width||640;
+  const tg=s.telegram||{ok:false,msg:''};
+  ['chan','cnt','scrapeBtn'].forEach(id=> $('#'+id).disabled=!tg.ok);
+  if(tg.msg) $('#tgHint').textContent = tg.ok?'ready':tg.msg.replace(/[🔒⚠️]/g,'').trim();
+  state._counts={clips:s.clips, frames:s.frames};
+}
+function paintStats(){
+  const c=state._counts||{clips:0,frames:0};
+  $('#stats').innerHTML = `<b>${c.clips}</b> clips · <b>${(c.frames||0).toLocaleString()}</b> frames `+
+    `&nbsp;·&nbsp; <span class="sel">${state.selected.size} of ${state.videos.length} selected</span>`;
 }
 
-async function loadCorpus(){
+// ── corpus filmstrip: select, reorder, remove ────────────────────────────
+async function loadCorpus(firstLoad){
   const c = await (await fetch('/api/corpus')).json();
-  state.videos = c.videos;
-  const strip = $('#strip'); strip.innerHTML='';
-  const MAX = 14;
-  c.videos.slice(0,MAX).forEach(v=>{
-    const img = document.createElement('img');
-    img.src = '/thumb/'+v.video_id; img.title = v.name; img.dataset.id = v.video_id;
-    if(state.selected===v.video_id) img.classList.add('sel');
-    img.onclick = ()=>{ selectClip(v.video_id); };
-    strip.appendChild(img);
+  state.videos=c.videos;
+  const ids=new Set(c.videos.map(v=>v.video_id));
+  state.order = state.order.filter(i=>ids.has(i));            // keep order, drop gone
+  c.videos.forEach(v=>{ if(!state.order.includes(v.video_id)) state.order.push(v.video_id); });
+  state.selected = new Set([...state.selected].filter(i=>ids.has(i)));
+  if(firstLoad) state.order.forEach(i=>state.selected.add(i)); // default: all selected
+  paintStrip(); paintStats();
+}
+function paintStrip(){
+  const strip=$('#strip'); strip.innerHTML='';
+  const meta=Object.fromEntries(state.videos.map(v=>[v.video_id,v]));
+  let ordinal=0;
+  state.order.forEach(id=>{
+    const v=meta[id]; if(!v) return;
+    const sel=state.selected.has(id); if(sel) ordinal++;
+    const el=document.createElement('div');
+    el.className='thumb'+(sel?' sel':''); el.draggable=true; el.dataset.id=id; el.title=v.name;
+    el.innerHTML=`<img src="/thumb/${id}"><span class="ord">${sel?ordinal:''}</span><span class="del" title="remove from pool">✕</span>`;
+    el.querySelector('.del').onclick=(e)=>{ e.stopPropagation(); removeClip(id, v.name); };
+    el.onclick=()=>{ if(el._dragged) return; toggle(id); };
+    el.ondragstart=e=>{ el._dragged=false; state._drag=id; el.classList.add('drag'); e.dataTransfer.effectAllowed='move'; };
+    el.ondragend=()=>{ el.classList.remove('drag'); setTimeout(()=>el._dragged=false,0); };
+    el.ondragover=e=>{ e.preventDefault(); };
+    el.ondrop=e=>{ e.preventDefault(); reorder(state._drag, id); const d=strip.querySelector('.drag'); if(d)d._dragged=true; };
+    strip.appendChild(el);
   });
-  if(c.videos.length>MAX){
-    const more=document.createElement('span'); more.className='more';
-    more.textContent='+'+(c.videos.length-MAX); strip.appendChild(more);
-  }
-  if(!state.selected && c.videos.length) state.selected=c.videos[0].video_id;
 }
-
-function selectClip(id){
-  state.selected=id;
-  setSeg('draw','one');
-  document.querySelectorAll('#strip img').forEach(i=>i.classList.toggle('sel',i.dataset.id===id));
+function toggle(id){ state.selected.has(id)?state.selected.delete(id):state.selected.add(id); paintStrip(); paintStats(); updateDerived(); }
+function reorder(dragId, targetId){
+  if(!dragId||dragId===targetId) return;
+  const o=state.order; o.splice(o.indexOf(dragId),1);
+  o.splice(o.indexOf(targetId),0,dragId); paintStrip(); paintStats();
 }
-
-function updateDerived(){
-  const sw = Math.max(1, +$('#sw').value);
-  const span = +$('#span').value;
-  const axisLen = state.axis==='vertical' ? state.width : 360;
-  const nStrips = Math.ceil(axisLen/sw);
-  const fps = state.fps;
-  const fpsStrip = span*fps/nStrips;
-  $('#derived').innerHTML =
-    `<b>${nStrips}</b> strips · <b>${fpsStrip.toFixed(2)}</b> frames per strip · `+
-    `frame holds <b>${span.toFixed(1)}s</b> of time`;
+async function removeClip(id, name){
+  if(!confirm('Remove "'+name+'" from the pool?\nDeletes its decomposed frames (source file stays in library).')) return;
+  const fd=new FormData(); fd.append('video_id',id);
+  await fetch('/api/remove',{method:'POST',body:fd});
+  state.order=state.order.filter(x=>x!==id); state.selected.delete(id);
+  await loadStats(); await loadCorpus(false); updateDerived();
 }
+$('#selAll').onclick=()=>{ state.order.forEach(i=>state.selected.add(i)); paintStrip(); paintStats(); updateDerived(); };
+$('#selNone').onclick=()=>{ state.selected.clear(); paintStrip(); paintStats(); updateDerived(); };
 
-function setSeg(group, val){
-  const map={dir:'dir',axis:'axis',draw:'draw'};
-  const el = $('#'+map[group]);
-  el.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.v===val));
-  state[group]=val;
-  if(group==='draw'){
-    $('#drawnote').textContent = val==='one' ? 'single clip · slit-scan' : 'rotating across pool';
-  }
+// ── time controls (two views of one control) ─────────────────────────────
+function syncRange(){
+  // slider spans 0.05 → 4 frames-per-strip in seconds for the current strip config
+  $('#span').min=spanForFps(0.05).toFixed(3);
+  $('#span').max=spanForFps(4).toFixed(3);
+}
+function setSpan(span, from){
+  span=Math.max(+$('#span').min, Math.min(+$('#span').max, span));
+  $('#span').value=span; $('#spanv').textContent=fmtSpan(span).replace('s','');
+  if(from!=='num') $('#fps_ps').value=fpsPerStrip(span).toFixed(2);
   updateDerived();
 }
+function updateDerived(){
+  const span=+$('#span').value, ns=nStrips(), fp=fpsPerStrip(span);
+  let txt=`<b>${ns}</b> strips · <b>${fp.toFixed(2)}</b> frames per strip · frame holds <b>${fmtSpan(span)}</b> of time`;
+  if(fp<1) txt+=` <span class="flag">— strips share frames, little displacement</span>`;
+  const sel=state.selected.size;
+  txt+= sel? ` &nbsp;·&nbsp; ${sel===1?'slit-scan (1 clip)':sel+'-clip rotation'}` : ` <span class="flag">— no clips selected</span>`;
+  $('#derived').innerHTML=txt;
+}
+$('#sw').oninput=e=>{ $('#swv').textContent=e.target.value; syncRange(); setSpan(+$('#span').value,'sw'); };
+$('#span').oninput=()=> setSpan(+$('#span').value,'slider');
+$('#fps_ps').oninput=e=>{ let f=Math.max(.05,Math.min(4,+e.target.value||1)); setSpan(spanForFps(f),'num'); };
+['dir','axis'].forEach(g=> $('#'+g).querySelectorAll('button').forEach(b=> b.onclick=()=>{
+  $('#'+g).querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+  state[g]=b.dataset.v; if(g==='axis'){ syncRange(); setSpan(+$('#span').value,'axis'); } updateDerived();
+}));
 
-// controls wiring
-$('#sw').oninput = e=>{ $('#swv').textContent=e.target.value; updateDerived(); };
-$('#span').oninput = e=>{ $('#spanv').textContent=(+e.target.value).toFixed(1); updateDerived(); };
-['dir','axis','draw'].forEach(g=>{
-  $('#'+g).querySelectorAll('button').forEach(b=> b.onclick=()=>setSeg(g,b.dataset.v));
-});
-
-// render
-$('#renderBtn').onclick = async ()=>{
+// ── render ───────────────────────────────────────────────────────────────
+$('#renderBtn').onclick=async()=>{
+  const ids=state.order.filter(i=>state.selected.has(i));
+  if(!ids.length){ $('#ph').textContent='select at least one clip first'; $('#ph').style.display='block'; return; }
   const screen=$('#screen'); screen.classList.add('busy'); $('#ph').style.display='none';
   const fd=new FormData();
-  fd.append('strip_width', $('#sw').value);
-  fd.append('span_seconds', $('#span').value);
-  fd.append('direction', state.dir);
-  fd.append('orientation', state.axis);
-  fd.append('draw_from', state.draw);
-  fd.append('video_id', state.selected||'');
+  fd.append('strip_width',$('#sw').value); fd.append('span_seconds',$('#span').value);
+  fd.append('direction',state.dir); fd.append('orientation',state.axis);
+  fd.append('video_ids', ids.join(','));
   try{
-    const r = await (await fetch('/api/render',{method:'POST',body:fd})).json();
+    const r=await (await fetch('/api/render',{method:'POST',body:fd})).json();
     if(r.error){ $('#ph').textContent=r.error; $('#ph').style.display='block'; }
-    else{
-      const v=$('#vid'); v.src=r.url+'?t='+Date.now(); v.style.display='block';
-      v.play();
-      $('#derived').innerHTML += ` &nbsp;·&nbsp; rendered <b>${r.frames}</b>f in <b>${r.wall_s.toFixed(1)}s</b>`;
-    }
-  }catch(err){ $('#ph').textContent='render failed: '+err; $('#ph').style.display='block'; }
+    else{ const v=$('#vid'); v.src=r.url+'?t='+Date.now(); v.style.display='block'; v.play(); }
+  }catch(e){ $('#ph').textContent='render failed: '+e; $('#ph').style.display='block'; }
   screen.classList.remove('busy');
 };
 
-// scrub bar bound to the video element
+// scrub
 const vid=$('#vid');
-vid.ontimeupdate = ()=>{
-  const p = vid.duration ? vid.currentTime/vid.duration : 0;
+vid.ontimeupdate=()=>{ const p=vid.duration?vid.currentTime/vid.duration:0;
   $('#fill').style.width=(p*100)+'%'; $('#head').style.left=(p*100)+'%';
-  $('#time').textContent=`${fmtTime(vid.currentTime)} / ${fmtTime(vid.duration)}`;
-};
-$('#track').onclick = e=>{
-  const rect=e.currentTarget.getBoundingClientRect();
-  if(vid.duration) vid.currentTime = ((e.clientX-rect.left)/rect.width)*vid.duration;
-};
-$('#screen').onclick = e=>{ if(e.target===vid){ vid.paused?vid.play():vid.pause(); } };
+  $('#time').textContent=`${fmtTime(vid.currentTime)} / ${fmtTime(vid.duration)}`; };
+$('#track').onclick=e=>{ const r=e.currentTarget.getBoundingClientRect();
+  if(vid.duration) vid.currentTime=((e.clientX-r.left)/r.width)*vid.duration; };
+$('#screen').onclick=e=>{ if(e.target===vid){ vid.paused?vid.play():vid.pause(); } };
 
 // corpus overlay
 $('#corpusBtn').onclick=()=>$('#overlay').classList.add('open');
 $('#closeBtn').onclick=()=>$('#overlay').classList.remove('open');
-async function refresh(){ await loadStats(); await loadCorpus(); }
-async function post(url, fd, msg){
-  $('#sheetStatus').textContent=msg;
+async function post(url,fd,msg){ $('#sheetStatus').textContent=msg;
   try{ const r=await (await fetch(url,{method:'POST',body:fd})).json();
-    $('#sheetStatus').textContent = (r.message||'') + ` · ${r.imported||r.decomposed||0} added · ${r.clips} clips / ${r.frames} frames`;
-    await refresh();
-  }catch(e){ $('#sheetStatus').textContent='failed: '+e; }
-}
-$('#importBtn').onclick=()=>{
-  const files=$('#files').files; if(!files.length){$('#sheetStatus').textContent='choose files first';return;}
-  const fd=new FormData(); [...files].forEach(f=>fd.append('files',f));
-  post('/api/import', fd, 'importing + decomposing…');
-};
-$('#decompBtn').onclick=()=> post('/api/decompose', new FormData(), 'decomposing library…');
-$('#scrapeBtn').onclick=()=>{
-  const fd=new FormData(); fd.append('channel',$('#chan').value); fd.append('count',$('#cnt').value);
-  post('/api/scrape', fd, 'scraping + decomposing…');
-};
+    $('#sheetStatus').textContent=(r.message||'')+` · ${r.imported??r.decomposed??r.removed??''} · ${r.clips} clips / ${r.frames} frames`;
+    await loadStats(); await loadCorpus(false); updateDerived();
+  }catch(e){ $('#sheetStatus').textContent='failed: '+e; } }
+$('#importBtn').onclick=()=>{ const f=$('#files').files; if(!f.length){$('#sheetStatus').textContent='choose files first';return;}
+  const fd=new FormData(); [...f].forEach(x=>fd.append('files',x)); post('/api/import',fd,'importing + decomposing…'); };
+$('#decompBtn').onclick=()=> post('/api/decompose',new FormData(),'decomposing library…');
+$('#scrapeBtn').onclick=()=>{ const fd=new FormData(); fd.append('channel',$('#chan').value); fd.append('count',$('#cnt').value);
+  post('/api/scrape',fd,'scraping…'); };
+$('#wipeBtn').onclick=()=>{ if(!confirm('Wipe ALL decomposed frames from the pool?\nLibrary source files are kept.')) return;
+  post('/api/wipe',new FormData(),'wiping pool…'); };
 
-refresh();
+// boot
+(async()=>{ await loadStats(); await loadCorpus(true);
+  syncRange(); setSpan(spanForFps(1),'init'); updateDerived(); })();
 </script>
 </body>
 </html>

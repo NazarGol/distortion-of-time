@@ -203,6 +203,52 @@ def stats() -> dict:
     return {"clips": int(nv), "frames": int(nf)}
 
 
+# ── removal / reset ──────────────────────────────────────────────────────────────
+def remove_video(video_id: str, delete_source: bool = False) -> dict:
+    """Remove one video from the pool: delete its frames from disk, its index
+    rows, and its thumbnail. Optionally delete the source file too (only when it
+    lives in library/ — never touch files elsewhere)."""
+    import shutil
+    rec = get_video(video_id)
+    con = _connect()
+    try:
+        row = con.execute("SELECT source_path FROM videos WHERE video_id=?",
+                          (video_id,)).fetchone()
+        src = row[0] if row else None
+        con.execute("DELETE FROM frames WHERE video_id=?", (video_id,))
+        con.execute("DELETE FROM videos WHERE video_id=?", (video_id,))
+        con.commit()
+    finally:
+        con.close()
+    shutil.rmtree(os.path.join(config.POOL_DIR, video_id), ignore_errors=True)
+    thumb = os.path.join(config.CACHE_DIR, f"thumb_{video_id}.jpg")
+    if os.path.isfile(thumb):
+        os.remove(thumb)
+    if (delete_source and src and os.path.isfile(src)
+            and os.path.dirname(os.path.abspath(src)) == config.LIBRARY_DIR):
+        os.remove(src)
+    return rec
+
+
+def wipe(delete_library: bool = False) -> dict:
+    """Reset the pool back to empty. With delete_library, also remove the source
+    clips from library/ (a clean slate to start from your own footage)."""
+    import shutil
+    for v in list_videos():
+        remove_video(v["video_id"], delete_source=delete_library)
+    for name in os.listdir(config.POOL_DIR):        # sweep any stray frame dirs
+        p = os.path.join(config.POOL_DIR, name)
+        if os.path.isdir(p):
+            shutil.rmtree(p, ignore_errors=True)
+    con = _connect()
+    try:
+        con.executescript("DELETE FROM frames; DELETE FROM videos;")
+        con.commit()
+    finally:
+        con.close()
+    return stats()
+
+
 def thumbnail(video_id: str) -> str:
     """Path to a small JPEG thumbnail (first pool frame), generated on demand."""
     thumb = os.path.join(config.CACHE_DIR, f"thumb_{video_id}.jpg")

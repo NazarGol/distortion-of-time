@@ -125,6 +125,17 @@ def api_scrape(channel: str = Form(...), count: int = Form(5),
     return {"message": msg, "decomposed": added, **pool.stats()}
 
 
+@app.post("/api/remove")
+def api_remove(video_id: str = Form(...), delete_source: bool = Form(False)):
+    rec = pool.remove_video(video_id, delete_source=bool(delete_source))
+    return {"removed": rec.get("name", video_id), **pool.stats()}
+
+
+@app.post("/api/wipe")
+def api_wipe(delete_library: bool = Form(False)):
+    return pool.wipe(delete_library=bool(delete_library))
+
+
 # ── render ───────────────────────────────────────────────────────────────────────
 @app.post("/api/render")
 def api_render(
@@ -132,21 +143,23 @@ def api_render(
     span_seconds: float = Form(1.5),
     direction: str = Form("forward"),        # forward | back
     orientation: str = Form("vertical"),     # vertical | horizontal
-    draw_from: str = Form("corpus"),         # one | corpus
-    video_id: str = Form(""),
+    video_ids: str = Form(""),               # ordered, comma-separated selection
     preview: bool = Form(False),
 ):
-    vids = pool.list_videos()
-    if not vids:
+    pooled = {v["video_id"]: v for v in pool.list_videos()}
+    if not pooled:
         return JSONResponse({"error": "The pool is empty — add clips first."}, status_code=400)
 
-    if draw_from == "one":
-        chosen = next((v for v in vids if v["video_id"] == video_id), vids[0])
-        videos, source_mode = [chosen], "single"
-        fps = float(chosen["fps"] or config.FPS_FALLBACK)
-    else:
-        videos, source_mode = vids, "rotate"
-        fps = _working_fps(vids)
+    # exactly the selected clips, in the order given, are the rotation pool.
+    ids = [i for i in (video_ids.split(",") if video_ids else []) if i in pooled]
+    if not ids:
+        return JSONResponse({"error": "Select at least one clip in the filmstrip."},
+                            status_code=400)
+    videos = [pooled[i] for i in ids]
+    # one clip → slit-scan (single); many → rotation weave across them.
+    source_mode = "single" if len(videos) == 1 else "rotate"
+    fps = float(videos[0]["fps"] or config.FPS_FALLBACK) if len(videos) == 1 \
+        else _working_fps(videos)
 
     axis_len = config.WORKING_WIDTH if orientation != "horizontal" else config.WORKING_HEIGHT
     n_strips = (axis_len + max(1, strip_width) - 1) // max(1, strip_width)
