@@ -6,9 +6,8 @@
 <title>Distortion of Time</title>
 <style>
   :root{
-    --bg:#08080a; --panel:#0d0d10; --ink:#d2d2d6; --dim:#6a6a72;
-    --dimmer:#3a3a42; --line:rgba(255,255,255,.09); --accent:#e9e9ee;
-    --warn:#d8a35a; --guide:#6fb2c9;
+    --bg:#08080a; --panel:#0c0c0f; --ink:#d2d2d6; --dim:#6a6a72; --dimmer:#33333a;
+    --line:rgba(255,255,255,.07); --accent:#e9e9ee; --warn:#c9944e; --guide:#6fb2c9;
     --mono:"SF Mono",ui-monospace,"DejaVu Sans Mono",Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box; margin:0; padding:0}
@@ -16,95 +15,119 @@
   body{background:var(--bg); color:var(--ink); font-family:var(--mono); font-size:13px;
     line-height:1.4; -webkit-font-smoothing:antialiased; display:flex; flex-direction:column;
     height:100vh; overflow:hidden}
-  .lbl{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim)}
   button{font-family:var(--mono); cursor:pointer; background:none; border:none; color:inherit}
   input,select{font-family:var(--mono)}
+  .lbl{font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--dim);
+    opacity:.5; transition:opacity .12s}
+  .ctl:hover .lbl, .ctl:focus-within .lbl, .grp:hover .lbl{opacity:1}
 
+  /* header — barely there */
   header{display:flex; justify-content:space-between; align-items:baseline;
-    padding:13px 20px; border-bottom:1px solid var(--line)}
-  header .title{font-size:11px; letter-spacing:.32em; text-transform:uppercase}
-  header .stats{font-size:11px; letter-spacing:.12em; color:var(--dim)}
+    padding:11px 20px; opacity:.55; transition:opacity .15s}
+  header:hover{opacity:1}
+  header .title{font-size:10px; letter-spacing:.34em; text-transform:uppercase; color:var(--dim)}
+  header .stats{font-size:10px; letter-spacing:.12em; color:var(--dim)}
   header .stats b{color:var(--ink); font-weight:400}
   header .sel{color:var(--accent)}
 
-  .stage{flex:1 1 auto; min-height:0; display:flex; flex-direction:column; padding:14px 20px 6px; gap:8px}
+  /* TIER 1 — the preview dominates */
+  .stage{flex:1 1 auto; min-height:60vh; display:flex; flex-direction:column; padding:0 20px; gap:8px}
   .screen{flex:1 1 auto; min-height:0; background:#000; position:relative; display:flex;
     align-items:center; justify-content:center; overflow:hidden}
   .screen video{max-width:100%; max-height:100%; display:block}
-  .screen .placeholder{color:var(--dimmer); font-size:11px; letter-spacing:.2em; text-transform:uppercase; text-align:center; padding:0 20px}
-  .screen.busy::after{content:"RENDERING…"; position:absolute; color:var(--ink); font-size:11px; letter-spacing:.25em}
-
-  .scrub{display:flex; align-items:center; gap:14px}
-  .track{flex:1 1 auto; height:3px; background:#1b1b20; position:relative; cursor:pointer}
+  .screen .placeholder{color:var(--dimmer); font-size:11px; letter-spacing:.22em; text-transform:uppercase; text-align:center; padding:0 20px}
+  .screen.busy::after{content:"RENDERING…"; position:absolute; color:var(--ink); font-size:11px; letter-spacing:.28em}
+  .scrub{display:flex; align-items:center; gap:14px; opacity:.5; transition:opacity .15s}
+  .scrub:hover{opacity:1}
+  .track{flex:1 1 auto; height:2px; background:#1b1b20; position:relative; cursor:pointer}
   .track .fill{position:absolute; left:0; top:0; bottom:0; width:0; background:var(--accent)}
-  .track .head{position:absolute; top:50%; width:2px; height:11px; background:var(--accent); transform:translate(-50%,-50%); left:0}
-  .time{font-size:11px; color:var(--dim); letter-spacing:.08em; min-width:82px; text-align:right}
+  .track .head{position:absolute; top:50%; width:2px; height:10px; background:var(--accent); transform:translate(-50%,-50%); left:0}
+  .time{font-size:10px; color:var(--dim); letter-spacing:.08em; min-width:82px; text-align:right}
 
-  /* effect selector — plain names, no boxes */
-  .effectbar{display:flex; gap:0; align-items:center; padding:12px 20px 2px; border-top:1px solid var(--line)}
-  .effectbar button{font-size:11px; letter-spacing:.26em; text-transform:uppercase; color:var(--dimmer); padding:0}
-  .effectbar button.on{color:var(--accent)}
-  .effectbar button:hover{color:var(--dim)}
-  .effectbar .sep{color:var(--dimmer); padding:0 12px; font-size:11px}
+  /* effect line — name + actions */
+  .bar{display:flex; justify-content:space-between; align-items:center; padding:12px 20px 4px}
+  .effects{display:flex; align-items:center; gap:0}
+  .effects button{font-size:11px; letter-spacing:.28em; text-transform:uppercase; color:var(--dimmer); padding:0}
+  .effects button.on{color:var(--accent)}
+  .effects button.on::after{content:" ▾"; color:var(--dim); font-size:9px; letter-spacing:0}
+  .effects button:hover{color:var(--dim)}
+  .effects .sep{color:var(--dimmer); padding:0 12px; font-size:11px}
+  .actions{display:flex; align-items:center; gap:18px}
+  .actions button{font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--dim)}
+  .actions button:hover{color:var(--ink)}
+  .actions button.act{color:var(--dim)}
+  .actions .render{color:#08080a; background:var(--accent); padding:8px 18px; letter-spacing:.22em}
+  .actions .render:hover{background:#fff}
+  .actions .on{color:var(--accent)}
 
-  .controls{display:grid; gap:24px; padding:10px 20px 4px; align-items:start}
-  .controls.hidden{display:none}
-  #rowSeq{grid-template-columns:1fr 1.2fr 1.2fr 1fr}
-  #rowWeave{grid-template-columns:1.1fr 1.5fr 1fr}
-  #rowSuper{grid-template-columns:1fr 1fr 1.2fr 1fr}
-  #rowPost{grid-template-columns:1.5fr 1.2fr 1fr; border-top:1px solid var(--line); padding-top:12px; margin-top:6px}
-  .ctl{display:flex; flex-direction:column; gap:8px; min-width:0}
-  .ctl .val{font-size:12px; letter-spacing:.04em}
+  .readout{padding:2px 20px 10px; font-size:11px; color:var(--dim); letter-spacing:.04em; min-height:16px}
+  .readout b{color:var(--ink); font-weight:400}
+  .readout .flag{color:var(--warn)}
+  .readout .guidetxt{color:var(--guide)}
+
+  /* TIER 2 — compact strip, only the active effect's ~3 controls */
+  #tier2{display:none; gap:30px; padding:6px 20px 12px}
+  #tier2.open{display:flex}
+  #tier2 .ctl{display:flex; flex-direction:column; gap:7px; min-width:120px}
+
+  /* TIER 3 — advanced: one quiet narrow column */
+  #tier3{display:none; padding:6px 20px 14px}
+  #tier3.open{display:block}
+  #tier3 .col{max-width:340px; display:flex; flex-direction:column; gap:14px;
+    border-left:1px solid var(--line); padding-left:16px}
+  #tier3 .grp{display:flex; flex-direction:column; gap:7px}
+
+  .ctl .val{font-size:11px; letter-spacing:.03em; color:var(--dim)}
   .ctl .val b{color:var(--ink)}
   .row2{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
-  input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:2px; background:var(--dimmer); outline:none}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:9px; height:14px; background:var(--accent); cursor:pointer; border-radius:0}
-  input[type=range]::-moz-range-thumb{width:9px; height:14px; background:var(--accent); cursor:pointer; border:none; border-radius:0}
+  input[type=range]{-webkit-appearance:none; appearance:none; width:130px; height:2px; background:var(--dimmer); outline:none; opacity:.7}
+  input[type=range]:hover{opacity:1}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:8px; height:13px; background:var(--accent); cursor:pointer; border-radius:0}
+  input[type=range]::-moz-range-thumb{width:8px; height:13px; background:var(--accent); cursor:pointer; border:none; border-radius:0}
   input.num{width:58px; background:#000; border:1px solid var(--line); color:var(--ink); font-size:11px; padding:4px 5px; text-align:right}
-  select{background:#000; border:1px solid var(--line); color:var(--ink); font-size:11px; padding:4px 5px; width:100%}
+  select{background:#000; border:1px solid var(--line); color:var(--ink); font-size:11px; padding:4px 6px}
   select option:disabled{color:var(--dimmer)}
-  .mini{display:flex; flex-direction:column; gap:4px}
-  .mini .lbl{font-size:9px}
-  .seg{display:flex; border:1px solid var(--line)}
-  .seg + .seg{margin-top:6px}
-  .seg button{flex:1; padding:5px 4px; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); border-right:1px solid var(--line)}
+  .seg{display:inline-flex; border:1px solid var(--line)}
+  .seg button{padding:4px 10px; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); border-right:1px solid var(--line)}
   .seg button:last-child{border-right:none}
   .seg button.on{background:var(--accent); color:#08080a}
+  .chk{font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); display:inline-flex; align-items:center; gap:5px; cursor:pointer}
 
-  .derived{padding:8px 20px 10px; font-size:11px; color:var(--dim); letter-spacing:.05em}
-  .derived b{color:var(--ink); font-weight:400}
-  .derived .flag{color:var(--warn)}
-
-  .foot{display:flex; align-items:center; gap:14px; padding:8px 20px 10px; border-top:1px solid var(--line)}
+  /* filmstrip */
+  .foot{display:flex; align-items:center; gap:14px; padding:8px 20px 12px; border-top:1px solid var(--line)}
   .stripwrap{flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:5px}
-  .striptools{display:flex; gap:14px; align-items:center}
+  .striptools{display:flex; gap:14px; align-items:center; opacity:.5; transition:opacity .15s}
+  .stripwrap:hover .striptools{opacity:1}
   .striptools button{font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim)}
   .striptools button:hover{color:var(--ink)}
   .strip{display:flex; gap:6px; overflow-x:auto; overflow-y:hidden; padding-bottom:4px; align-items:center}
-  .strip::-webkit-scrollbar{height:6px}
-  .strip::-webkit-scrollbar-thumb{background:#26262c}
+  .strip::-webkit-scrollbar{height:5px}
+  .strip::-webkit-scrollbar-thumb{background:#222}
   .thumb{position:relative; flex:0 0 auto; cursor:pointer; user-select:none}
-  .thumb img{height:44px; width:auto; display:block; opacity:.3; filter:grayscale(.5); transition:opacity .1s}
+  .thumb img{height:42px; width:auto; display:block; opacity:.28; filter:grayscale(.6); transition:opacity .1s}
   .thumb:hover img{opacity:.6}
   .thumb.sel img{opacity:1; filter:none; outline:1px solid var(--accent); outline-offset:-1px}
   .thumb.guide img{outline:1px dashed var(--guide); outline-offset:-1px}
   .thumb .ord{position:absolute; left:2px; bottom:2px; font-size:9px; color:var(--accent); background:rgba(0,0,0,.65); padding:0 3px; display:none}
   .thumb.sel .ord{display:block}
-  .thumb .g{position:absolute; left:2px; top:2px; font-size:9px; letter-spacing:.1em; padding:0 3px;
-    background:rgba(0,0,0,.7); color:var(--dimmer); display:none}
+  .thumb .g{position:absolute; left:2px; top:2px; font-size:9px; letter-spacing:.1em; padding:0 3px; background:rgba(0,0,0,.7); color:var(--dimmer); display:none}
   .thumb:hover .g{display:block}
   .thumb.guide .g{display:block; color:var(--guide); border:1px solid var(--guide)}
-  .thumb .del{position:absolute; top:2px; right:2px; width:15px; height:15px; line-height:14px;
-    text-align:center; font-size:11px; background:rgba(0,0,0,.7); color:var(--ink); display:none}
+  .thumb .del{position:absolute; top:2px; right:2px; width:14px; height:14px; line-height:13px; text-align:center; font-size:11px; background:rgba(0,0,0,.7); color:var(--ink); display:none}
   .thumb:hover .del{display:block}
   .thumb .del:hover{background:#a33; color:#fff}
   .thumb.drag{opacity:.4}
-  .foot .act{padding:9px 16px; font-size:10px; letter-spacing:.18em; text-transform:uppercase; border:1px solid var(--line); color:var(--dim)}
-  .foot .act:hover{color:var(--ink); border-color:var(--dim)}
-  .foot .act.render{background:var(--accent); color:#08080a; border-color:var(--accent)}
-  .foot .act.render:hover{background:#fff}
+  .foot .corpusbtn{padding:8px 14px; font-size:10px; letter-spacing:.18em; text-transform:uppercase; border:1px solid var(--line); color:var(--dim)}
+  .foot .corpusbtn:hover{color:var(--ink); border-color:var(--dim)}
 
-  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; z-index:10}
+  /* FULLSCREEN — nothing but the image */
+  body.fs > header, body.fs .bar, body.fs .readout, body.fs #tier2, body.fs #tier3,
+  body.fs .foot, body.fs .scrub{display:none !important}
+  body.fs .stage{padding:0; min-height:100vh}
+  body.fs .screen{min-height:100vh}
+
+  /* overlays */
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.78); display:none; align-items:center; justify-content:center; z-index:20}
   .overlay.open{display:flex}
   .sheet{background:var(--panel); border:1px solid var(--line); width:min(560px,92vw); padding:24px 26px; display:flex; flex-direction:column; gap:18px}
   .sheet h2{font-size:11px; letter-spacing:.24em; text-transform:uppercase; font-weight:400}
@@ -118,6 +141,9 @@
   .sheet .status{font-size:11px; color:var(--dim); min-height:15px}
   .sheet .close{align-self:flex-end; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim)}
   .hint{font-size:10px; color:var(--dimmer); letter-spacing:.04em}
+  .cheat{font-size:12px; line-height:2; letter-spacing:.04em}
+  .cheat kbd{display:inline-block; min-width:22px; text-align:center; border:1px solid var(--line); padding:1px 6px; color:var(--ink); margin-right:10px}
+  .cheat span{color:var(--dim)}
 </style>
 </head>
 <body>
@@ -128,7 +154,7 @@
 
   <div class="stage">
     <div class="screen" id="screen">
-      <div class="placeholder" id="ph">select clips · choose an effect · render</div>
+      <div class="placeholder" id="ph">select clips · choose an effect · press <kbd>r</kbd> to render</div>
       <video id="vid" loop playsinline style="display:none"></video>
     </div>
     <div class="scrub">
@@ -137,148 +163,22 @@
     </div>
   </div>
 
-  <!-- effect selector -->
-  <div class="effectbar" id="effectbar">
-    <button data-m="weave" class="on">Weave</button><span class="sep">·</span>
-    <button data-m="superimpose">Superimpose</button><span class="sep">·</span>
-    <button data-m="frames">Frames</button>
-  </div>
-
-  <!-- sequence: governs every mode -->
-  <div class="controls" id="rowSeq">
-    <div class="ctl">
-      <span class="lbl">Order</span>
-      <select id="order"></select>
+  <div class="bar">
+    <div class="effects" id="effectbar">
+      <button data-m="weave" class="on">Weave</button><span class="sep">·</span>
+      <button data-m="superimpose">Superimpose</button><span class="sep">·</span>
+      <button data-m="frames">Frames</button>
     </div>
-    <div class="ctl">
-      <span class="lbl">Step rate</span>
-      <div class="row2">
-        <input type="range" id="steprate" min="1" max="60" step="1" value="24" style="flex:1">
-        <span class="val"><b id="steprv">24</b>/s</span>
-      </div>
-      <span class="val" style="font-size:10px;color:var(--dim)">hold <b id="holdv">1</b> frames</span>
-    </div>
-    <div class="ctl">
-      <span class="lbl">Jump</span>
-      <div class="row2">
-        <input type="range" id="jumpprob" min="0" max="1" step="0.01" value="0" style="flex:1">
-        <span class="val"><b id="jumpprobv">0.00</b></span>
-      </div>
-      <div class="mini"><span class="lbl">range (steps)</span>
-        <input type="number" class="num" id="jumprange" value="60" min="0" max="5000" step="10"></div>
-    </div>
-    <div class="ctl">
-      <span class="lbl">Seed</span>
-      <div class="row2">
-        <input type="number" class="num" id="seed" value="4471" min="0" max="999999" style="width:88px">
-        <button class="lbl" id="reseed" style="border:1px solid var(--line);padding:4px 8px">new</button>
-      </div>
-      <span class="hint">in filename + metadata</span>
+    <div class="actions">
+      <button class="act" id="advBtn">advanced</button>
+      <button id="cheatBtn">?</button>
+      <button class="render" id="renderBtn">Render</button>
     </div>
   </div>
+  <div class="readout" id="derived">—</div>
 
-  <!-- mode-dependent first row -->
-  <div class="controls" id="rowWeave">
-    <div class="ctl">
-      <span class="lbl">Strip width</span>
-      <input type="range" id="sw" min="1" max="48" step="1" value="2">
-      <span class="val"><b id="swv">2</b> px</span>
-    </div>
-    <div class="ctl">
-      <span class="lbl">Time span</span>
-      <input type="range" id="span" min="0.1" max="20" step="0.05" value="1.5">
-      <div class="row2">
-        <span class="val">holds <b id="spanv">1.5</b>s</span>
-        <div class="mini"><span class="lbl">frames / strip</span>
-          <input type="number" class="num" id="fps_ps" min="0.05" max="4" step="0.05" value="1"></div>
-      </div>
-    </div>
-    <div class="ctl">
-      <span class="lbl">Direction</span>
-      <div class="seg" id="dir">
-        <button data-v="forward" class="on">Forward</button><button data-v="back">Back</button>
-      </div>
-      <div class="seg" id="axis">
-        <button data-v="vertical" class="on">Vertical</button><button data-v="horizontal">Horizontal</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="controls hidden" id="rowSuper">
-    <div class="ctl">
-      <span class="lbl">Layers</span>
-      <input type="range" id="layers" min="1" max="32" step="1" value="1">
-      <span class="val"><b id="layersv">1</b></span>
-    </div>
-    <div class="ctl">
-      <span class="lbl">Stride</span>
-      <input type="range" id="stride" min="0" max="24" step="0.5" value="1">
-      <span class="val"><b id="stridev">1</b> steps between layers</span>
-      <label class="lbl"><input type="checkbox" id="centred"> centred stack</label>
-    </div>
-    <div class="ctl">
-      <span class="lbl">Parallax</span>
-      <select id="parallax"></select>
-      <div class="row2">
-        <input type="range" id="pxamt" min="0" max="1" step="0.05" value="0" style="flex:1">
-        <span class="val"><b id="pxamtv">0.00</b></span>
-      </div>
-      <div class="row2" id="pxflow" style="display:none">
-        <span class="lbl">flow vs</span>
-        <select id="flowsource" style="width:auto"></select>
-      </div>
-      <div class="row2" id="pxaffine" style="display:none">
-        <label class="lbl"><input type="checkbox" id="pxzoom" checked> zoom</label>
-        <label class="lbl"><input type="checkbox" id="pxpan"> pan</label>
-        <label class="lbl"><input type="checkbox" id="pxrot"> rotate</label>
-      </div>
-    </div>
-    <div class="ctl">
-      <span class="lbl">Blend</span>
-      <select id="blend"></select>
-    </div>
-  </div>
-
-  <div class="controls hidden" id="rowFrames"></div>
-
-  <!-- always-present post row -->
-  <div class="controls" id="rowPost">
-    <div class="ctl">
-      <span class="lbl">Trails</span>
-      <div class="row2">
-        <input type="range" id="persist" min="0" max="0.98" step="0.02" value="0" style="flex:1">
-        <span class="val"><b id="persistv">0.00</b></span>
-      </div>
-      <div class="row2">
-        <select id="trailmode" style="width:auto"></select>
-        <div class="mini"><span class="lbl">zoom</span><input type="number" class="num" id="tzoom" value="0" step="0.005" min="-0.1" max="0.1"></div>
-        <div class="mini"><span class="lbl">rotate°</span><input type="number" class="num" id="trot" value="0" step="0.1" min="-5" max="5"></div>
-      </div>
-    </div>
-    <div class="ctl">
-      <span class="lbl">Blur</span>
-      <select id="blurkind"></select>
-      <div class="row2">
-        <input type="range" id="bluramt" min="0" max="1" step="0.05" value="0" style="flex:1">
-        <span class="val"><b id="bluramtv">0.00</b></span>
-      </div>
-      <div class="row2" id="smearangle" style="display:none">
-        <span class="lbl">angle</span>
-        <input type="range" id="blurangle" min="0" max="180" step="5" value="90" style="flex:1">
-        <span class="val"><b id="bluranglev">90</b>°</span>
-      </div>
-    </div>
-    <div class="ctl">
-      <span class="lbl">Guide</span>
-      <span class="val" id="guidename" style="color:var(--guide)">none</span>
-      <div class="row2">
-        <button class="lbl" id="clearguide" style="border:1px solid var(--line); padding:4px 8px">clear</button>
-        <span class="hint">set via G on a thumbnail</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="derived" id="derived">—</div>
+  <div id="tier2"></div>
+  <div id="tier3"><div class="col" id="tier3col"></div></div>
 
   <div class="foot">
     <div class="stripwrap">
@@ -289,10 +189,10 @@
       </div>
       <div class="strip" id="strip"></div>
     </div>
-    <button class="act" id="corpusBtn">Corpus</button>
-    <button class="act render" id="renderBtn">Render</button>
+    <button class="corpusbtn" id="corpusBtn">Corpus</button>
   </div>
 
+  <!-- corpus overlay -->
   <div class="overlay" id="overlay">
     <div class="sheet">
       <button class="close" id="closeBtn">Close ✕</button>
@@ -326,92 +226,208 @@
     </div>
   </div>
 
+  <!-- cheatsheet -->
+  <div class="overlay" id="cheat">
+    <div class="sheet">
+      <button class="close" id="cheatClose">Close ✕</button>
+      <h2>Keys</h2>
+      <div class="cheat">
+        <div><kbd>space</kbd><span>play / pause</span></div>
+        <div><kbd>r</kbd><span>render</span></div>
+        <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><span>weave / superimpose / frames</span></div>
+        <div><kbd>a</kbd><span>advanced</span></div>
+        <div><kbd>g</kbd><span>guide on hovered clip</span></div>
+        <div><kbd>[</kbd><kbd>]</kbd><span>nudge the primary control</span></div>
+        <div><kbd>f</kbd><span>fullscreen — image only</span></div>
+        <div><kbd>?</kbd><span>this</span></div>
+      </div>
+    </div>
+  </div>
+
 <script>
 const $ = s => document.querySelector(s);
-const state = {fps:24, width:640, videos:[], order:[], selected:new Set(), guide:null,
-               mode:"weave", dir:"forward", axis:"vertical", caps:{}};
+// ── state: filmstrip + view ──────────────────────────────────────────────
+const state = {fps:24, width:640, videos:[], strip:[], selected:new Set(),
+               guide:null, caps:{}, hoverThumb:null, primaryEl:null, counts:{clips:0,frames:0}};
+// ── P: every render parameter, at its NEUTRAL default (wired to the API 1:1) ──
+const P = {
+  mode:"weave",
+  // sequence (tier 3) — neutral: linear, one still per output frame, no jumps
+  order:"linear", step_rate:24, jump_prob:0, jump_range:60, seed:4471,
+  // weave (tier 2) — neutral: fps_per_strip 1 → frame_step 1.0 (== pre-effects baseline)
+  strip_width:2, fps_per_strip:1, direction:"forward", orientation:"vertical",
+  // superimpose (tier 2/3)
+  layers:1, stride:1, centred:false, blend:"mean", parallax:"none", amount:0,
+  px_zoom:true, px_pan:false, px_rotate:false, flow_source:"source",
+  // post (tier 3)
+  persistence:0, trail_mode:"mean", trail_zoom:0, trail_rotate:0,
+  blur_kind:"", blur_amount:0, blur_angle:90,
+};
 
 const fmtTime=t=>{t=Math.max(0,t||0);const m=Math.floor(t/60),s=Math.floor(t%60).toString().padStart(2,'0');return `${m}:${s}`;};
 const fmtSpan=s=> s>=10?s.toFixed(0)+'s' : s>=1?s.toFixed(1)+'s' : s.toFixed(2)+'s';
-const axisLen=()=> state.axis==='vertical'?state.width:360;
-const nStrips=()=> Math.ceil(axisLen()/Math.max(1,+$('#sw').value));
-const fpsPerStrip=span=> span*state.fps/nStrips();
-const spanForFps=f=> f*nStrips()/state.fps;
-const nameOf=id=>{const v=state.videos.find(x=>x.video_id===id); return v?v.name.replace(/\.[^.]+$/,'').slice(0,20):'';};
+const nameOf=id=>{const v=state.videos.find(x=>x.video_id===id); return v?v.name.replace(/\.[^.]+$/,'').slice(0,18):'';};
+const axisLen=()=> P.orientation==='vertical'?state.width:360;
+const nStrips=()=> Math.ceil(axisLen()/Math.max(1,P.strip_width));
+const spanSeconds=()=> P.fps_per_strip*nStrips()/state.fps;
+
+// ── control builders (each binds straight to P) ──────────────────────────
+function ctl(label, ...kids){ const d=document.createElement('div'); d.className='ctl';
+  const l=document.createElement('span'); l.className='lbl'; l.textContent=label; d.append(l,...kids); return d; }
+function rangeCtl(label,key,mn,mx,st,fmt,onset){
+  const r=document.createElement('input'); r.type='range'; r.min=mn; r.max=mx; r.step=st; r.value=P[key];
+  const v=document.createElement('span'); v.className='val';
+  const upd=()=>v.innerHTML=fmt(+r.value);
+  r.oninput=()=>{ P[key]=+r.value; upd(); onset&&onset(+r.value); updateDerived(); };
+  upd(); const row=document.createElement('div'); row.className='row2'; row.append(r,v);
+  const d=ctl(label,row); d._range=r; return d;
+}
+function selCtl(label,key,opts,{disabledFn,labelFn}={}){
+  const s=document.createElement('select');
+  opts.forEach(o=>{const e=document.createElement('option'); e.value=o;
+    e.textContent=labelFn?labelFn(o):o; if(disabledFn&&disabledFn(o))e.disabled=true; s.appendChild(e);});
+  s.value=P[key]; s.onchange=()=>{ P[key]=s.value; updateDerived(); };
+  return ctl(label,s);
+}
+function segCtl(label,key,pairs,onset){
+  const seg=document.createElement('div'); seg.className='seg';
+  pairs.forEach(([val,txt])=>{ const b=document.createElement('button'); b.textContent=txt;
+    b.className=P[key]===val?'on':''; b.onclick=()=>{ P[key]=val;
+      [...seg.children].forEach(c=>c.classList.toggle('on',c===b)); onset&&onset(); updateDerived(); };
+    seg.appendChild(b); });
+  return ctl(label,seg);
+}
+function numField(label,key,mn,mx,st){
+  const i=document.createElement('input'); i.type='number'; i.className='num';
+  i.min=mn; i.max=mx; i.step=st; i.value=P[key];
+  i.onchange=()=>{ P[key]=+i.value; updateDerived(); };
+  const m=document.createElement('div'); m.className='row2';
+  const l=document.createElement('span'); l.className='lbl'; l.textContent=label; m.append(l,i); return m;
+}
+function checkField(label,key){
+  const l=document.createElement('label'); l.className='chk';
+  const c=document.createElement('input'); c.type='checkbox'; c.checked=P[key];
+  c.onchange=()=>{ P[key]=c.checked; updateDerived(); };
+  l.append(c,document.createTextNode(label)); return l;
+}
+
+// ── TIER 2: the ~3 controls that define the active effect ────────────────
+function buildTier2(){
+  const t=$('#tier2'); t.innerHTML=''; state.primaryEl=null;
+  if(P.mode==='weave'){
+    const sw=rangeCtl('Strip width','strip_width',1,48,1,v=>`<b>${v}</b> px`, ()=>{});
+    const span=rangeCtl('Time span','fps_per_strip',0.05,4,0.05,
+      v=>`holds <b>${fmtSpan(spanSeconds())}</b> · <b>${v.toFixed(2)}</b> f/strip`);
+    const dir=segCtl('Direction','direction',[['forward','Forward'],['back','Back']]);
+    t.append(sw,span,dir); state.primaryEl=span._range;              // primary = time span
+  } else if(P.mode==='superimpose'){
+    const lay=rangeCtl('Layers','layers',1,32,1,v=>`<b>${v}</b>`);
+    const str=rangeCtl('Stride','stride',0,24,0.5,v=>`<b>${v}</b> steps`);
+    const pxAmt=v=>`${P.parallax==='none'?'—':`<b>${v.toFixed(2)}</b>`}`;
+    const px=document.createElement('div'); px.className='ctl';
+    const pl=document.createElement('span'); pl.className='lbl'; pl.textContent='Parallax';
+    const psel=document.createElement('select');
+    (state.caps.parallax_modes||['none']).forEach(m=>{const e=document.createElement('option');
+      e.value=m; e.textContent=m; if(m==='depth'&&!(state.caps.depth||{}).ok){e.disabled=true; e.textContent='depth — n/a';} psel.appendChild(e);});
+    psel.value=P.parallax; const pr=document.createElement('input'); pr.type='range'; pr.min=0;pr.max=1;pr.step=0.05; pr.value=P.amount;
+    const pv=document.createElement('span'); pv.className='val'; pv.innerHTML=pxAmt(P.amount);
+    psel.onchange=()=>{P.parallax=psel.value; pv.innerHTML=pxAmt(P.amount); updateDerived();};
+    pr.oninput=()=>{P.amount=+pr.value; pv.innerHTML=pxAmt(P.amount); updateDerived();};
+    const prow=document.createElement('div'); prow.className='row2'; prow.append(pr,pv);
+    px.append(pl,psel,prow);
+    t.append(lay,str,px); state.primaryEl=lay._range;                 // primary = layers
+  }
+  // frames: no structural controls
+  $('#tier2').classList.toggle('open', state._t2open && P.mode!=='frames');
+}
+
+// ── TIER 3: everything else, one quiet column ────────────────────────────
+function buildTier3(){
+  const c=$('#tier3col'); c.innerHTML='';
+  const caps=state.caps;
+  const seq=document.createElement('div'); seq.className='grp';
+  seq.append(selCtl('Order','order',caps.orders||['linear']));
+  seq.append(rangeCtl('Step rate','step_rate',1,Math.max(60,Math.round(state.fps*2)),1,
+    v=>`<b>${(+v).toFixed(0)}</b> stills/sec · hold <b>${(state.fps/Math.max(0.05,v)).toFixed(2).replace(/\.?0+$/,'')}</b>`));
+  const jp=rangeCtl('Jump','jump_prob',0,1,0.01,v=>`<b>${v.toFixed(2)}</b>`);
+  seq.append(jp, numField('range (steps)','jump_range',0,5000,10));
+  const seedrow=document.createElement('div'); seedrow.className='row2';
+  const sl=document.createElement('span'); sl.className='lbl'; sl.textContent='Seed';
+  const si=document.createElement('input'); si.type='number'; si.className='num'; si.style.width='84px';
+  si.value=P.seed; si.onchange=()=>{P.seed=+si.value; updateDerived();};
+  const nb=document.createElement('button'); nb.className='lbl'; nb.textContent='new'; nb.style.cssText='border:1px solid var(--line);padding:3px 8px';
+  nb.onclick=()=>{P.seed=Math.floor(Math.random()*100000); si.value=P.seed; updateDerived();};
+  seedrow.append(sl,si,nb); seq.append(seedrow);
+
+  const post=document.createElement('div'); post.className='grp';
+  post.append(rangeCtl('Trails','persistence',0,0.98,0.02,v=>`<b>${v.toFixed(2)}</b>`));
+  const trow=document.createElement('div'); trow.className='row2';
+  const tsel=document.createElement('select'); (caps.trail_modes||['mean']).forEach(m=>{const e=document.createElement('option');e.value=m;e.textContent=m;tsel.appendChild(e);});
+  tsel.value=P.trail_mode; tsel.onchange=()=>{P.trail_mode=tsel.value; updateDerived();};
+  trow.append(tsel, numField('zoom','trail_zoom',-0.1,0.1,0.005), numField('rot°','trail_rotate',-5,5,0.1));
+  post.append(trow);
+  const bsel=selCtl('Blur','blur_kind',['',...(caps.blur_kinds||[])],
+    {labelFn:o=>o===''?'(none)':o.replace(/_/g,' '),
+     disabledFn:o=>(caps.blur_guide_only||[]).includes(o)&&!state.guide});
+  post.append(bsel);
+  post.append(rangeCtl('Blur amount','blur_amount',0,1,0.05,v=>`<b>${v.toFixed(2)}</b>`));
+  post.append(numField('smear angle°','blur_angle',0,180,5));
+
+  const extra=document.createElement('div'); extra.className='grp';
+  extra.append(segCtl('Orientation','orientation',[['vertical','Vertical'],['horizontal','Horizontal']]));
+  extra.append(selCtl('Blend','blend',caps.blends||['mean']));
+  extra.append(selCtl('Flow vs','flow_source',caps.flow_sources||['source']));
+  const cen=document.createElement('div'); cen.className='row2';
+  cen.append(checkField('centred stack','centred'),checkField('px zoom','px_zoom'),
+             checkField('px pan','px_pan'),checkField('px rotate','px_rotate'));
+  extra.append(cen);
+  const grow=document.createElement('div'); grow.className='row2';
+  const gl=document.createElement('span'); gl.className='lbl'; gl.textContent='Guide';
+  const gv=document.createElement('span'); gv.className='val'; gv.id='guidename'; gv.style.color='var(--guide)'; gv.textContent=state.guide?nameOf(state.guide):'none';
+  const gc=document.createElement('button'); gc.className='lbl'; gc.textContent='clear'; gc.style.cssText='border:1px solid var(--line);padding:3px 8px'; gc.onclick=()=>setGuide(null);
+  grow.append(gl,gv,gc);
+  const gwrap=document.createElement('div'); gwrap.className='grp'; gwrap.append(grow);
+
+  c.append(seq,post,extra,gwrap);
+}
 
 // ── stats / capabilities ─────────────────────────────────────────────────
 async function loadStats(){
   const s=await (await fetch('/api/stats')).json();
-  state.fps=s.fps||24; state.width=s.width||640; state.caps=s;
-  state._counts={clips:s.clips,frames:s.frames};
-  const sr=$('#steprate'); sr.max=Math.max(60,Math.round(state.fps*2));
-  if(!state._srTouched){ sr.value=state.fps; $('#steprv').textContent=(+sr.value).toFixed(0); }
+  state.fps=s.fps||24; state.width=s.width||640; state.caps=s; state.counts={clips:s.clips,frames:s.frames};
+  if(!state._srTouched) P.step_rate=state.fps;            // neutral: step rate = output fps
   const tg=s.telegram||{ok:false,msg:''};
   ['chan','cnt','scrapeBtn'].forEach(id=>$('#'+id).disabled=!tg.ok);
-  if(tg.msg) $('#tgHint').textContent = tg.ok?'ready':tg.msg.replace(/[🔒⚠️]/g,'').trim();
-  fillSelects(s);
-}
-function fillSelects(s){
-  const px=$('#parallax'); px.innerHTML='';
-  (s.parallax_modes||['none']).forEach(m=>{
-    const o=document.createElement('option'); o.value=m; o.textContent=m;
-    if(m==='depth' && !(s.depth||{}).ok){ o.disabled=true; o.textContent='depth — unavailable'; o.title=(s.depth||{}).msg||''; }
-    px.appendChild(o);
-  });
-  const bl=$('#blend'); bl.innerHTML='';
-  (s.blends||['mean']).forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;bl.appendChild(o);});
-  const od=$('#order'); od.innerHTML='';
-  (s.orders||['linear']).forEach(o=>{const e=document.createElement('option');e.value=o;e.textContent=o;od.appendChild(e);});
-  const fs=$('#flowsource'); fs.innerHTML='';
-  (s.flow_sources||['source']).forEach(o=>{const e=document.createElement('option');e.value=o;e.textContent=o;fs.appendChild(e);});
-  const tm=$('#trailmode'); tm.innerHTML='';
-  (s.trail_modes||['mean']).forEach(b=>{const o=document.createElement('option');o.value=b;o.textContent=b;tm.appendChild(o);});
-  refreshBlurSelect();
-}
-function refreshBlurSelect(){
-  const s=state.caps, cur=$('#blurkind').value;
-  const bk=$('#blurkind'); bk.innerHTML='';
-  const none=document.createElement('option'); none.value=''; none.textContent='(none)'; bk.appendChild(none);
-  (s.blur_kinds||[]).forEach(k=>{
-    const o=document.createElement('option'); o.value=k; o.textContent=k.replace(/_/g,' ');
-    if((s.blur_guide_only||[]).includes(k) && !state.guide){ o.disabled=true; o.textContent+=' — needs guide'; }
-    bk.appendChild(o);
-  });
-  bk.value = [...bk.options].some(o=>o.value===cur && !o.disabled) ? cur : '';
+  if(tg.msg) $('#tgHint').textContent=tg.ok?'ready':tg.msg.replace(/[🔒⚠️]/g,'').trim();
 }
 function paintStats(){
-  const c=state._counts||{clips:0,frames:0};
-  $('#stats').innerHTML=`<b>${c.clips}</b> clips · <b>${(c.frames||0).toLocaleString()}</b> frames `+
-    `&nbsp;·&nbsp; <span class="sel">${state.selected.size} of ${state.videos.length} selected</span>`;
+  const c=state.counts;
+  $('#stats').innerHTML=`<b>${c.clips}</b> clips · <b>${(c.frames||0).toLocaleString()}</b> frames`+
+    ` &nbsp;·&nbsp; <span class="sel">${state.selected.size} of ${state.videos.length} selected</span>`;
 }
 
 // ── filmstrip ────────────────────────────────────────────────────────────
 async function loadCorpus(first){
   const c=await (await fetch('/api/corpus')).json();
-  state.videos=c.videos;
-  const ids=new Set(c.videos.map(v=>v.video_id));
-  state.order=state.order.filter(i=>ids.has(i));
-  c.videos.forEach(v=>{ if(!state.order.includes(v.video_id)) state.order.push(v.video_id); });
+  state.videos=c.videos; const ids=new Set(c.videos.map(v=>v.video_id));
+  state.strip=state.strip.filter(i=>ids.has(i));
+  c.videos.forEach(v=>{ if(!state.strip.includes(v.video_id)) state.strip.push(v.video_id); });
   state.selected=new Set([...state.selected].filter(i=>ids.has(i)));
-  if(state.guide && !ids.has(state.guide)) setGuide(null);
-  if(first) state.order.forEach(i=>state.selected.add(i));
+  if(state.guide&&!ids.has(state.guide)) setGuide(null);
+  if(first) state.strip.forEach(i=>state.selected.add(i));
   paintStrip(); paintStats();
 }
 function paintStrip(){
-  const strip=$('#strip'); strip.innerHTML='';
-  const meta=Object.fromEntries(state.videos.map(v=>[v.video_id,v]));
+  const strip=$('#strip'); strip.innerHTML=''; const meta=Object.fromEntries(state.videos.map(v=>[v.video_id,v]));
   let ord=0;
-  state.order.forEach(id=>{
-    const v=meta[id]; if(!v) return;
-    const sel=state.selected.has(id); if(sel) ord++;
-    const el=document.createElement('div');
-    el.className='thumb'+(sel?' sel':'')+(state.guide===id?' guide':'');
+  state.strip.forEach(id=>{ const v=meta[id]; if(!v) return; const sel=state.selected.has(id); if(sel)ord++;
+    const el=document.createElement('div'); el.className='thumb'+(sel?' sel':'')+(state.guide===id?' guide':'');
     el.draggable=true; el.dataset.id=id; el.title=v.name;
-    el.innerHTML=`<img src="/thumb/${id}"><span class="ord">${sel?ord:''}</span>`+
-                 `<span class="g" title="use as guide clip">G</span><span class="del" title="remove from pool">✕</span>`;
+    el.innerHTML=`<img src="/thumb/${id}"><span class="ord">${sel?ord:''}</span><span class="g" title="guide">G</span><span class="del" title="remove">✕</span>`;
     el.querySelector('.del').onclick=e=>{e.stopPropagation(); removeClip(id,v.name);};
     el.querySelector('.g').onclick=e=>{e.stopPropagation(); setGuide(state.guide===id?null:id);};
-    el.onclick=()=>{ if(!el._dragged) toggle(id); };
+    el.onclick=()=>{ if(!el._dragged) toggleSel(id); };
+    el.onmouseenter=()=>state.hoverThumb=id; el.onmouseleave=()=>{ if(state.hoverThumb===id) state.hoverThumb=null; };
     el.ondragstart=()=>{ el._dragged=false; state._drag=id; el.classList.add('drag'); };
     el.ondragend=()=>{ el.classList.remove('drag'); setTimeout(()=>el._dragged=false,0); };
     el.ondragover=e=>e.preventDefault();
@@ -419,169 +435,139 @@ function paintStrip(){
     strip.appendChild(el);
   });
 }
-function toggle(id){ state.selected.has(id)?state.selected.delete(id):state.selected.add(id); paintStrip(); paintStats(); updateDerived(); }
-function reorder(a,b){ if(!a||a===b) return; const o=state.order; o.splice(o.indexOf(a),1); o.splice(o.indexOf(b),0,a); paintStrip(); paintStats(); }
-function setGuide(id){ state.guide=id; $('#guidename').textContent=id?nameOf(id):'none'; refreshBlurSelect(); paintStrip(); updateDerived(); }
+function toggleSel(id){ state.selected.has(id)?state.selected.delete(id):state.selected.add(id); paintStrip(); paintStats(); updateDerived(); }
+function reorder(a,b){ if(!a||a===b)return; const o=state.strip; o.splice(o.indexOf(a),1); o.splice(o.indexOf(b),0,a); paintStrip(); paintStats(); }
+function setGuide(id){ state.guide=id; const g=$('#guidename'); if(g)g.textContent=id?nameOf(id):'none'; buildTier3IfOpen(); paintStrip(); updateDerived(); }
 async function removeClip(id,name){
   if(!confirm('Remove "'+name+'" from the pool?\nDeletes its decomposed frames (source file stays in library).')) return;
-  const fd=new FormData(); fd.append('video_id',id);
-  await fetch('/api/remove',{method:'POST',body:fd});
-  state.order=state.order.filter(x=>x!==id); state.selected.delete(id); if(state.guide===id) setGuide(null);
+  const fd=new FormData(); fd.append('video_id',id); await fetch('/api/remove',{method:'POST',body:fd});
+  state.strip=state.strip.filter(x=>x!==id); state.selected.delete(id); if(state.guide===id) setGuide(null);
   await loadStats(); await loadCorpus(false); updateDerived();
 }
-$('#selAll').onclick=()=>{state.order.forEach(i=>state.selected.add(i)); paintStrip(); paintStats(); updateDerived();};
+$('#selAll').onclick=()=>{state.strip.forEach(i=>state.selected.add(i)); paintStrip(); paintStats(); updateDerived();};
 $('#selNone').onclick=()=>{state.selected.clear(); paintStrip(); paintStats(); updateDerived();};
-$('#clearguide').onclick=()=>setGuide(null);
 
-// ── mode switching ───────────────────────────────────────────────────────
-$('#effectbar').querySelectorAll('button').forEach(b=> b.onclick=()=>{
-  state.mode=b.dataset.m;
-  $('#effectbar').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
-  $('#rowWeave').classList.toggle('hidden', state.mode!=='weave');
-  $('#rowSuper').classList.toggle('hidden', state.mode!=='superimpose');
-  updateDerived();
-});
-
-// ── time controls (weave) ────────────────────────────────────────────────
-function syncRange(){ $('#span').min=spanForFps(0.05).toFixed(3); $('#span').max=spanForFps(4).toFixed(3); }
-function setSpan(span,from){
-  span=Math.max(+$('#span').min,Math.min(+$('#span').max,span));
-  $('#span').value=span; $('#spanv').textContent=fmtSpan(span).replace('s','');
-  if(from!=='num') $('#fps_ps').value=fpsPerStrip(span).toFixed(2);
-  updateDerived();
-}
-$('#sw').oninput=e=>{$('#swv').textContent=e.target.value; syncRange(); setSpan(+$('#span').value,'sw');};
-$('#span').oninput=()=>setSpan(+$('#span').value,'slider');
-$('#fps_ps').oninput=e=>setSpan(spanForFps(Math.max(.05,Math.min(4,+e.target.value||1))),'num');
-['dir','axis'].forEach(g=>$('#'+g).querySelectorAll('button').forEach(b=>b.onclick=()=>{
-  $('#'+g).querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
-  state[g]=b.dataset.v; if(g==='axis'){syncRange(); setSpan(+$('#span').value,'axis');} updateDerived();
-}));
-
-// sequence controls
-function updateHold(){
-  const sr=Math.max(0.05,+$('#steprate').value);
-  $('#holdv').textContent=(state.fps/sr).toFixed(2).replace(/\.00$/,'');
-}
-$('#order').onchange=updateDerived;
-$('#steprate').oninput=e=>{ state._srTouched=true; $('#steprv').textContent=(+e.target.value).toFixed(0); updateHold(); updateDerived(); };
-$('#jumpprob').oninput=e=>{$('#jumpprobv').textContent=(+e.target.value).toFixed(2); updateDerived();};
-$('#jumprange').onchange=updateDerived;
-$('#seed').onchange=updateDerived;
-$('#reseed').onclick=()=>{ $('#seed').value=Math.floor(Math.random()*100000); updateDerived(); };
-
-// superimpose + post live readouts
-$('#layers').oninput=e=>{$('#layersv').textContent=e.target.value; updateDerived();};
-$('#stride').oninput=e=>{$('#stridev').textContent=(+e.target.value); updateDerived();};
-$('#centred').onchange=updateDerived;
-$('#flowsource').onchange=updateDerived;
-$('#pxamt').oninput=e=>{$('#pxamtv').textContent=(+e.target.value).toFixed(2); updateDerived();};
-$('#parallax').onchange=()=>{ const v=$('#parallax').value;
-  $('#pxaffine').style.display = v==='affine'?'flex':'none';
-  $('#pxflow').style.display   = v==='flow'?'flex':'none'; updateDerived(); };
-$('#blend').onchange=updateDerived;
-$('#persist').oninput=e=>{$('#persistv').textContent=(+e.target.value).toFixed(2); updateDerived();};
-$('#bluramt').oninput=e=>{$('#bluramtv').textContent=(+e.target.value).toFixed(2); updateDerived();};
-$('#blurangle').oninput=e=>{$('#bluranglev').textContent=e.target.value; updateDerived();};
-['trailmode','tzoom','trot'].forEach(id=>$('#'+id).onchange=updateDerived);
-$('#blurkind').onchange=()=>{ $('#smearangle').style.display = $('#blurkind').value==='smear'?'flex':'none'; updateDerived(); };
-
-// ── derived readout: the active chain, in plain words ────────────────────
+// ── readout — internally consistent, effect-led ──────────────────────────
 function updateDerived(){
   const parts=[];
-  // the traversal governs every mode, so it leads the readout
-  const ord=$('#order').value, sr=Math.max(0.05,+$('#steprate').value), hold=state.fps/sr;
-  let sq=`<b>${ord}</b> order · <b>${sr.toFixed(0)}</b> stills/sec`;
-  if(Math.abs(hold-1)>1e-6) sq+=` (hold <b>${hold.toFixed(2).replace(/\.00$/,'')}</b> frames)`;
-  const jp=+$('#jumpprob').value;
-  if(jp>0) sq+=` · jump <b>${jp.toFixed(2)}</b>`;
-  sq+=` · seed <b>${$('#seed').value}</b>`;
-  parts.push(sq);
-  if(state.mode==='weave'){
-    const span=+$('#span').value, ns=nStrips(), fp=fpsPerStrip(span);
-    let p=`<b>${ns}</b> strips · <b>${fp.toFixed(2)}</b> frames per strip · frame holds <b>${fmtSpan(span)}</b>`;
-    if(fp<1) p+=` <span class="flag">— strips share frames, little displacement</span>`;
-    parts.push(p);
-    parts.push(state.selected.size===1?'slit-scan (1 clip)':`${state.selected.size}-clip rotation`);
-  }else if(state.mode==='superimpose'){
-    const L=+$('#layers').value, st=+$('#stride').value;
-    parts.push(`<b>${L}</b> layers stride <b>${st}</b>`+($('#centred').checked?' (centred)':''));
-    const pm=$('#parallax').value, pa=+$('#pxamt').value;
-    if(pm!=='none'&&pa>0) parts.push(`<b>${pm}</b> parallax <b>${pa.toFixed(2)}</b>`+
-      (pm==='flow'?` vs ${$('#flowsource').value}`:''));
-    parts.push(`<b>${$('#blend').value}</b> blend`);
-    if(state.selected.size>1) parts.push(`across <b>${state.selected.size}</b> clips`);
-  }else{
-    parts.push('plain frames from the pool');
-  }
-  const per=+$('#persist').value;
-  if(per>0){ let t=`trails <b>${per.toFixed(2)}</b> ${$('#trailmode').value}`;
-    const z=+$('#tzoom').value, r=+$('#trot').value;
-    if(z||r) t+=` ${z?`zoom ${(1+z).toFixed(3)}`:''}${z&&r?' ':''}${r?`rot ${r}°`:''}`;
-    parts.push(t); }
-  const bk=$('#blurkind').value, ba=+$('#bluramt').value;
-  if(bk&&ba>0) parts.push(`<b>${bk.replace(/_/g,' ')}</b> blur <b>${ba.toFixed(2)}</b>`+
-    (bk==='smear'?` @ ${$('#blurangle').value}°`:''));
-  if(state.guide) parts.push(`<span style="color:var(--guide)">guide: ${nameOf(state.guide)}</span>`);
-  if(!state.selected.size) parts.push('<span class="flag">— no clips selected</span>');
+  if(P.mode==='weave'){
+    const fp=P.fps_per_strip;
+    let m=`weave · <b>${P.strip_width}</b>px · <b>${fp.toFixed(2)}</b> frame/strip`;
+    m += fp<1 ? ` <span class="flag">(strips share frames)</span>` : ` · spans <b>${fmtSpan(spanSeconds())}</b> across frame`;
+    if(P.direction==='back') m+=' · reversed';
+    parts.push(m);
+  } else if(P.mode==='superimpose'){
+    let m=`superimpose · <b>${P.layers}</b> layers stride <b>${P.stride}</b>`+(P.centred?' centred':'');
+    if(P.parallax!=='none'&&P.amount>0) m+=` · <b>${P.parallax}</b> parallax ${P.amount.toFixed(2)}`+(P.parallax==='flow'?` vs ${P.flow_source}`:'');
+    m+=` · <b>${P.blend}</b>`; parts.push(m);
+  } else parts.push('frames');
+  const hold=state.fps/Math.max(0.05,P.step_rate); const sb=[];
+  if(P.order!=='linear') sb.push(`<b>${P.order}</b> order`);
+  if(Math.abs(hold-1)>1e-6) sb.push(`<b>${(+P.step_rate).toFixed(0)}</b> stills/sec (hold ${hold.toFixed(2).replace(/\.?0+$/,'')})`);
+  if(P.jump_prob>0) sb.push(`jump <b>${P.jump_prob.toFixed(2)}</b>`);
+  sb.push(`seed <b>${P.seed}</b>`); parts.push(sb.join(' '));
+  if(P.persistence>0) parts.push(`trails <b>${P.persistence.toFixed(2)}</b> ${P.trail_mode}`+((P.trail_zoom||P.trail_rotate)?' +transform':''));
+  if(P.blur_kind&&P.blur_amount>0) parts.push(`<b>${P.blur_kind.replace(/_/g,' ')}</b> blur ${P.blur_amount.toFixed(2)}`+(P.blur_kind==='smear'?` @ ${P.blur_angle}°`:''));
+  if(state.guide) parts.push(`<span class="guidetxt">guide ${nameOf(state.guide)}</span>`);
+  if(!state.selected.size) parts.push('<span class="flag">no clips selected</span>');
   $('#derived').innerHTML=parts.join(' &nbsp;·&nbsp; ');
 }
 
+// ── mode / disclosures ───────────────────────────────────────────────────
+function setMode(m){
+  P.mode=m; $('#effectbar').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  state._t2open = (m!=='frames');            // switching effect reveals its controls
+  buildTier2(); updateDerived();
+}
+$('#effectbar').querySelectorAll('button').forEach(b=> b.onclick=()=>{
+  if(P.mode===b.dataset.m){ state._t2open=!state._t2open; $('#tier2').classList.toggle('open', state._t2open&&P.mode!=='frames'); }
+  else setMode(b.dataset.m);
+});
+function toggleAdvanced(){ const open=!$('#tier3').classList.contains('open');
+  if(open) buildTier3(); $('#tier3').classList.toggle('open',open); $('#advBtn').classList.toggle('on',open); }
+function buildTier3IfOpen(){ if($('#tier3').classList.contains('open')) buildTier3(); }
+$('#advBtn').onclick=toggleAdvanced;
+
 // ── render ───────────────────────────────────────────────────────────────
-$('#renderBtn').onclick=async()=>{
-  const ids=state.order.filter(i=>state.selected.has(i));
-  if(!ids.length){ $('#ph').textContent='select at least one clip first'; $('#ph').style.display='block'; return; }
-  const sc=$('#screen'); sc.classList.add('busy'); $('#ph').style.display='none';
+function buildFD(){
+  const ids=state.strip.filter(i=>state.selected.has(i));
   const fd=new FormData();
-  fd.append('mode',state.mode); fd.append('video_ids',ids.join(','));
-  if(state.guide) fd.append('guide_id',state.guide);
-  fd.append('strip_width',$('#sw').value); fd.append('span_seconds',$('#span').value);
-  fd.append('direction',state.dir); fd.append('orientation',state.axis);
-  fd.append('order',$('#order').value); fd.append('step_rate',$('#steprate').value);
-  fd.append('jump_prob',$('#jumpprob').value); fd.append('jump_range',$('#jumprange').value);
-  fd.append('seed',$('#seed').value);
-  fd.append('layers',$('#layers').value); fd.append('stride',$('#stride').value);
-  fd.append('centred',$('#centred').checked); fd.append('flow_source',$('#flowsource').value);
-  fd.append('blend',$('#blend').value); fd.append('parallax',$('#parallax').value);
-  fd.append('amount',$('#pxamt').value);
-  fd.append('px_zoom',$('#pxzoom').checked); fd.append('px_pan',$('#pxpan').checked); fd.append('px_rotate',$('#pxrot').checked);
-  fd.append('persistence',$('#persist').value); fd.append('trail_mode',$('#trailmode').value);
-  fd.append('trail_zoom',$('#tzoom').value); fd.append('trail_rotate',$('#trot').value);
-  fd.append('blur_kind',$('#blurkind').value); fd.append('blur_amount',$('#bluramt').value);
-  fd.append('blur_angle',$('#blurangle').value);
-  try{
-    const r=await (await fetch('/api/render',{method:'POST',body:fd})).json();
+  fd.append('mode',P.mode); fd.append('video_ids',ids.join(',')); if(state.guide)fd.append('guide_id',state.guide);
+  fd.append('strip_width',P.strip_width); fd.append('span_seconds',spanSeconds());
+  fd.append('direction',P.direction); fd.append('orientation',P.orientation);
+  fd.append('order',P.order); fd.append('step_rate',P.step_rate);
+  fd.append('jump_prob',P.jump_prob); fd.append('jump_range',P.jump_range); fd.append('seed',P.seed);
+  fd.append('layers',P.layers); fd.append('stride',P.stride); fd.append('centred',P.centred);
+  fd.append('flow_source',P.flow_source); fd.append('blend',P.blend);
+  fd.append('parallax',P.parallax); fd.append('amount',P.amount);
+  fd.append('px_zoom',P.px_zoom); fd.append('px_pan',P.px_pan); fd.append('px_rotate',P.px_rotate);
+  fd.append('persistence',P.persistence); fd.append('trail_mode',P.trail_mode);
+  fd.append('trail_zoom',P.trail_zoom); fd.append('trail_rotate',P.trail_rotate);
+  fd.append('blur_kind',P.blur_kind); fd.append('blur_amount',P.blur_amount); fd.append('blur_angle',P.blur_angle);
+  return {fd, n:ids.length};
+}
+async function doRender(){
+  const {fd,n}=buildFD();
+  if(!n){ $('#ph').textContent='select at least one clip first'; $('#ph').style.display='block'; return; }
+  const sc=$('#screen'); sc.classList.add('busy'); $('#ph').style.display='none';
+  try{ const r=await (await fetch('/api/render',{method:'POST',body:fd})).json();
     if(r.error){ $('#ph').textContent=r.error; $('#ph').style.display='block'; }
     else{ const v=$('#vid'); v.src=r.url+'?t='+Date.now(); v.style.display='block'; v.play(); }
   }catch(e){ $('#ph').textContent='render failed: '+e; $('#ph').style.display='block'; }
   sc.classList.remove('busy');
-};
+}
+$('#renderBtn').onclick=doRender;
 
-// scrub
+// ── preview scrub ────────────────────────────────────────────────────────
 const vid=$('#vid');
 vid.ontimeupdate=()=>{const p=vid.duration?vid.currentTime/vid.duration:0;
   $('#fill').style.width=(p*100)+'%'; $('#head').style.left=(p*100)+'%';
   $('#time').textContent=`${fmtTime(vid.currentTime)} / ${fmtTime(vid.duration)}`;};
 $('#track').onclick=e=>{const r=e.currentTarget.getBoundingClientRect(); if(vid.duration) vid.currentTime=((e.clientX-r.left)/r.width)*vid.duration;};
-$('#screen').onclick=e=>{ if(e.target===vid){vid.paused?vid.play():vid.pause();} };
+function togglePlay(){ if(vid.style.display==='none')return; vid.paused?vid.play():vid.pause(); }
+$('#screen').onclick=e=>{ if(e.target===vid) togglePlay(); };
 
-// corpus overlay
+// ── keyboard — performed, not filled in ──────────────────────────────────
+function nudge(dir){ const el=state.primaryEl; if(!el)return; dir>0?el.stepUp():el.stepDown(); el.dispatchEvent(new Event('input')); }
+function toggleFullscreen(){ document.body.classList.toggle('fs'); }
+function closeOverlays(){ document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open')); document.body.classList.remove('fs'); }
+document.addEventListener('keydown', e=>{
+  const tag=(document.activeElement||{}).tagName;
+  if(tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA'){ if(e.key==='Escape')document.activeElement.blur(); return; }
+  switch(e.key){
+    case ' ': e.preventDefault(); togglePlay(); break;
+    case 'r': doRender(); break;
+    case '1': setMode('weave'); break;
+    case '2': setMode('superimpose'); break;
+    case '3': setMode('frames'); break;
+    case 'a': toggleAdvanced(); break;
+    case 'g': if(state.hoverThumb) setGuide(state.guide===state.hoverThumb?null:state.hoverThumb); break;
+    case '[': nudge(-1); break;
+    case ']': nudge(1); break;
+    case 'f': toggleFullscreen(); break;
+    case '?': $('#cheat').classList.toggle('open'); break;
+    case 'Escape': closeOverlays(); break;
+  }
+});
+
+// ── corpus overlay + cheatsheet ──────────────────────────────────────────
 $('#corpusBtn').onclick=()=>$('#overlay').classList.add('open');
 $('#closeBtn').onclick=()=>$('#overlay').classList.remove('open');
+$('#cheatBtn').onclick=()=>$('#cheat').classList.add('open');
+$('#cheatClose').onclick=()=>$('#cheat').classList.remove('open');
 async function post(url,fd,msg){ $('#sheetStatus').textContent=msg;
   try{ const r=await (await fetch(url,{method:'POST',body:fd})).json();
     $('#sheetStatus').textContent=(r.message||'')+` · ${r.clips} clips / ${r.frames} frames`;
-    await loadStats(); await loadCorpus(false); updateDerived();
+    await loadStats(); await loadCorpus(false); buildTier3IfOpen(); updateDerived();
   }catch(e){ $('#sheetStatus').textContent='failed: '+e; } }
 $('#importBtn').onclick=()=>{const f=$('#files').files; if(!f.length){$('#sheetStatus').textContent='choose files first';return;}
   const fd=new FormData(); [...f].forEach(x=>fd.append('files',x)); post('/api/import',fd,'importing + decomposing…');};
 $('#decompBtn').onclick=()=>post('/api/decompose',new FormData(),'decomposing library…');
 $('#scrapeBtn').onclick=()=>{const fd=new FormData(); fd.append('channel',$('#chan').value); fd.append('count',$('#cnt').value); post('/api/scrape',fd,'scraping…');};
-$('#wipeBtn').onclick=()=>{ if(!confirm('Wipe ALL decomposed frames from the pool?\nLibrary source files are kept.')) return;
-  post('/api/wipe',new FormData(),'wiping pool…'); };
+$('#wipeBtn').onclick=()=>{ if(!confirm('Wipe ALL decomposed frames from the pool?\nLibrary source files are kept.'))return; post('/api/wipe',new FormData(),'wiping pool…'); };
 
-(async()=>{ await loadStats(); await loadCorpus(true);
-  syncRange(); setSpan(spanForFps(1),'init'); updateHold(); updateDerived(); })();
+// ── boot: tier-1 only ────────────────────────────────────────────────────
+(async()=>{ await loadStats(); await loadCorpus(true); buildTier2(); updateDerived(); })();
 </script>
 </body>
 </html>
